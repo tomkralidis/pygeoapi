@@ -28,6 +28,7 @@
 # =================================================================
 
 from collections import OrderedDict
+import json
 import logging
 
 from elasticsearch import Elasticsearch, exceptions, helpers
@@ -114,7 +115,7 @@ class ElasticsearchProvider(BaseProvider):
         return fields_
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime=None, properties=[], sortby=[], q=None):
         """
         query Elasticsearch index
 
@@ -125,6 +126,7 @@ class ElasticsearchProvider(BaseProvider):
         :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param q: full-text search term(s)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -227,6 +229,14 @@ class ElasticsearchProvider(BaseProvider):
                 }
                 query['sort'].append(sort_)
 
+        if q is not None:
+            query['query']['bool']['must'] = {'query_string': {'query': q}}
+
+        query['_source'] = {'excludes': [
+            'properties._raw_metadata',
+            'properties._anytext'
+        ]}
+
         if self.properties:
             LOGGER.debug('including specified fields: {}'.format(
                 self.properties))
@@ -238,6 +248,8 @@ class ElasticsearchProvider(BaseProvider):
             query['_source']['includes'].append('geometry')
         try:
             LOGGER.debug('querying Elasticsearch')
+            print('query: {}'.format(json.dumps(query, indent=4)))
+            LOGGER.debug('query: {}'.format(json.dumps(query, indent=4)))
 
             LOGGER.debug('Setting ES paging zero-based')
             if startindex > 0:
