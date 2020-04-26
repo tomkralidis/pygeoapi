@@ -41,7 +41,8 @@ LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi'  # noqa
+    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi',  # noqa
+    'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi'  # noqa
 }
 
 
@@ -325,7 +326,8 @@ def get_oas_30(cfg):
                     {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '#/components/parameters/sortby'},
-                    {'$ref': '#/components/parameters/startindex'}
+                    {'$ref': '#/components/parameters/startindex'},
+                    {'$ref': '{}/parameters/q.yaml'.format(OPENAPI_YAML['oapir'])}  # noqa
                 ],
                 'responses': {
                     200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa

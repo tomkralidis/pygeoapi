@@ -65,7 +65,11 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/req/core',
+    'http://www.opengis.net/spec/ogcapi-records/1.0/req/oas30',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/req/json',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/req/html'
 ]
 
 
@@ -560,7 +564,7 @@ class API:
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
-                               'resulttype', 'datetime', 'sortby']
+                               'resulttype', 'datetime', 'sortby', 'q']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
@@ -783,6 +787,14 @@ class API:
         else:
             sortby = []
 
+        LOGGER.debug('processing q parameter')
+        val = args.get('q')
+
+        if val is not None:
+            q = val
+        else:
+            q = None
+
         LOGGER.debug('Querying provider')
         LOGGER.debug('startindex: {}'.format(startindex))
         LOGGER.debug('limit: {}'.format(limit))
@@ -793,7 +805,7 @@ class API:
             content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime=datetime_, properties=properties,
-                              sortby=sortby)
+                              sortby=sortby, q=q)
         except ProviderConnectionError as err:
             exception = {
                 'code': 'NoApplicableCode',
