@@ -780,7 +780,7 @@
       "properties": {
         "id": 7,
         "scalerank": 0,
-        "name": "Lake Ladoga",
+        "name": ["Lake Ladoga","foo"],
         "name_alt": "https://en.wikipedia.org/wiki/Lake_Ladoga",
         "admin": null,
         "featureclass": "Lake"
@@ -859,7 +859,7 @@
         "id": 8,
         "scalerank": 0,
         "name": "Balqash K\u00f6li",
-        "name_alt": "Lake\rBalkhash",
+        "name_alt": "Lake\rBalkhash \n\n\n\n\n this is a very https://wur.nl long name and i don't want it to be long  https://nationaalgeoregister.nl/geonetwork very long name and i don't want it to be long this is a very long name and i don't want it to be long this is a very long name and i don't want it to be long this is a very long name and i don't want it to be long this is a very long name and i don't want it to be long this is a very long name and i don't want it to be long <br/> <h1>do you play with fire</h1><p>fdfgdfg</p>fdgdsfgds ",
         "admin": null,
         "featureclass": "Lake"
       },
