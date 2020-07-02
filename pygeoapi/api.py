@@ -40,6 +40,7 @@ from dateutil.parser import parse as dateparse
 import pytz
 
 from pygeoapi import __version__
+from pygeoapi.catalogue import catalogue_to_record
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
@@ -109,12 +110,18 @@ class API:
         """
 
         self.config = config
-        self.config['server']['url'] = self.config['server']['url'].rstrip('/')
-
-        if 'templates' not in self.config['server']:
-            self.config['server']['templates'] = TEMPLATES
 
         setup_logger(self.config['logging'])
+
+        LOGGER.debug('Normalizing URL')
+        self.config['server']['url'] = self.config['server']['url'].rstrip('/')
+
+        LOGGER.debug('Adding local catalogue')
+        self.config['resources']['-'] = catalogue_to_record(self.config)
+
+        LOGGER.debug('Setting templates')
+        if 'templates' not in self.config['server']:
+            self.config['server']['templates'] = TEMPLATES
 
     @pre_process
     @jsonldify

@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,35 +27,31 @@
 #
 # =================================================================
 
-__version__ = '0.9.dev0'
+from collections import OrderedDict
+import json
+import logging
 
-import click
-from pygeoapi.openapi import generate_openapi_document
-from pygeoapi.catalogue import generate_catalogue
+from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
 
-
-cli = click.Group()
-cli.version = __version__
+LOGGER = logging.getLogger(__name__)
 
 
-@cli.command()
-@click.option('--flask', 'server', flag_value="flask", default=True)
-@click.option('--starlette', 'server', flag_value="starlette")
-@click.pass_context
-def serve(ctx, server):
-    """Run the server with different daemon type (--flask is the default)"""
+class ElasticsearchCatalogueProvider(ElasticsearchProvider):
+    """Elasticsearch Provider"""
 
-    if server == "flask":
-        from pygeoapi.flask_app import serve as serve_flask
-        ctx.forward(serve_flask)
-        ctx.invoke(serve_flask)
-    elif server == "starlette":
-        from pygeoapi.starlette_app import serve as serve_starlette
-        ctx.forward(serve_starlette)
-        ctx.invoke(serve_starlette)
-    else:
-        raise click.ClickException('--flask/--starlette is required')
+    def __init__(self, provider_def):
+        super().__init__(provider_def)
 
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], datetime=None, properties=[], sortby=[], q=None):
 
-cli.add_command(generate_openapi_document)
-cli.add_command(generate_catalogue)
+        records = super().query(startindex, limit, resulttype, bbox, datetime,
+                                properties, sortby, q)
+
+        records.pop('type')
+        records['records'] = records.pop('features')
+
+        return records
+
+    def __repr__(self):
+        return '<ElasticsearchCatalogueProvider> {}'.format(self.data)

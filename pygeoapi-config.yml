@@ -44,8 +44,8 @@ server:
     # ogc_schemas_location: /opt/schemas.opengis.net
 
 logging:
-    level: ERROR
-    #logfile: /tmp/pygeoapi.log
+    level: DEBUG
+    logfile: /tmp/pygeoapi.log
 
 metadata:
     identification:
@@ -79,6 +79,12 @@ metadata:
         hours: Mo-Fr 08:00-17:00
         instructions: During hours of service. Off on weekends.
         role: pointOfContact
+    catalogue:
+        provider:
+            name: TinyDBCatalogue
+            data: /tmp/tinydb-records.json
+            id_field: identifier
+            time_field: datetime
 
 resources:
     obs:
