@@ -344,6 +344,7 @@ class API:
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
 
+            print("JJJ", k)
             for link in v['links']:
                 lnk = {
                     'type': link['type'],

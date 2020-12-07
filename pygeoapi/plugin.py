@@ -47,7 +47,7 @@ PLUGINS = {
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_catalogue.TinyDBCatalogueProvider',  # noqa
-        'ElasticsearchCatalogue': 'pygeoapi.provider.elasticsearch_.ElasticsearchCatalogueProvider'  # noqa
+        'ElasticsearchCatalogue': 'pygeoapi.provider.elasticsearch_catalogue.ElasticsearchCatalogueProvider'  # noqa
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'

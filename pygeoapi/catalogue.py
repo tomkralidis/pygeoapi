@@ -60,7 +60,7 @@ def catalogue_to_record(config):
                 'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
             }
         },
-#        'links': [{}],
+        'links': [],
         'provider': config['metadata']['catalogue']['provider']
     }
 

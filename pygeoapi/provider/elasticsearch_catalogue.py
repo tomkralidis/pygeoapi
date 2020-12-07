@@ -42,14 +42,20 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
     def __init__(self, provider_def):
         super().__init__(provider_def)
 
+    def get_fields(self):
+        fields = super().get_fields()
+        fields.pop('_raw_metadata')
+        fields.pop('_anytext')
+        return fields
+
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[], q=None):
 
         records = super().query(startindex, limit, resulttype, bbox, datetime,
                                 properties, sortby, q)
 
-        records.pop('type')
-        records['records'] = records.pop('features')
+#        records.pop('type')
+#        records['records'] = records.pop('features')
 
         return records
 
