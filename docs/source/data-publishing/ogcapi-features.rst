@@ -11,15 +11,21 @@ as a baseline and modify accordingly.
 Providers
 ---------
 
-The following feature providers are supported:
+pygeoapi core feature providers are listed below, along with a matrix of supported query
+parameters.
 
-- CSV
-- GeoJSON
-- Elasticsearch
-- OGR
-- MongoDB
-- PostgreSQL
-- SQLiteGPKG
+.. csv-table::
+   :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display)
+   :align: left
+
+   CSV,✅,results/hits,❌,❌,❌,✅
+   Elasticsearch,✅,results/hits,✅,✅,✅,✅
+   GeoJSON,✅,results/hits,❌,❌,❌,❌
+   MongoDB,✅,results,✅,✅,✅,❌
+   OGR,✅,results/hits,✅,❌,❌,❌
+   PostgreSQL,✅,results/hits,✅,❌,❌,❌
+   SQLiteGPKG,✅,results/hits,✅,❌,❌,❌
+
 
 Below are specific connection examples based on supported providers.
 
@@ -35,13 +41,14 @@ definition.
 
 .. code-block:: yaml
 
-   provider:
-       name: CSV
-       data: tests/data/obs.csv
-       id_field: id
-       geometry:
-           x_field: long
-           y_field: lat
+   providers:
+       - type: feature
+         name: CSV
+         data: tests/data/obs.csv
+         id_field: id
+         geometry:
+             x_field: long
+             y_field: lat
 
 
 GeoJSON
@@ -51,10 +58,11 @@ To publish a GeoJSON file, the file must be a valid GeoJSON FeatureCollection.
 
 .. code-block:: yaml
 
-   provider:
-       name: GeoJSON
-       data: tests/data/file.json
-       id_field: id
+   providers:
+       - type: feature
+         name: GeoJSON
+         data: tests/data/file.json
+         id_field: id
 
 
 Elasticsearch
@@ -71,11 +79,12 @@ To publish an Elasticsearch index, the following are required in your index:
 
 .. code-block:: yaml
 
-   provider:
-       name: Elasticsearch
-       data: http://localhost:9200/ne_110m_populated_places_simple
-       id_field: geonameid
-       time_field: datetimefield
+   providers:
+       - type: feature
+         name: Elasticsearch
+         data: http://localhost:9200/ne_110m_populated_places_simple
+         id_field: geonameid
+         time_field: datetimefield
 
 OGR
 ^^^
@@ -89,10 +98,11 @@ MongoDB
 
 .. code-block:: yaml
 
-   provider:
-       name: MongoDB
-       data: mongodb://localhost:27017/testdb
-       collection: testplaces
+   providers:
+       - type: feature
+         name: MongoDB
+         data: mongodb://localhost:27017/testdb
+         collection: testplaces
 
 
 PostgreSQL
@@ -102,17 +112,18 @@ PostgreSQL
 
 .. code-block:: yaml
 
-   provider:
-       name: PostgreSQL
-       data:
-           host: 127.0.0.1
-           dbname: test
-           user: postgres
-           password: postgres
-           search_path: [osm, public]
-       id_field: osm_id
-       table: hotosm_bdi_waterways
-       geom_field: foo_geom
+   providers:
+       - type: feature
+         name: PostgreSQL
+         data:
+             host: 127.0.0.1
+             dbname: test
+             user: postgres
+             password: postgres
+             search_path: [osm, public]
+         id_field: osm_id
+         table: hotosm_bdi_waterways
+         geom_field: foo_geom
 
 
 SQLiteGPKG
@@ -124,22 +135,24 @@ SQLite file:
 
 .. code-block:: yaml
 
-   provider:
-       name: SQLiteGPKG
-       data: ./tests/data/ne_110m_admin_0_countries.sqlite
-       id_field: ogc_fid
-       table: ne_110m_admin_0_countries
+   providers:
+       - type: feature
+         name: SQLiteGPKG
+         data: ./tests/data/ne_110m_admin_0_countries.sqlite
+         id_field: ogc_fid
+         table: ne_110m_admin_0_countries
 
 
 GeoPackage file:
 
 .. code-block:: yaml
 
-   provider:
-       name: SQLiteGPKG
-       data: ./tests/data/poi_portugal.gpkg
-       id_field: osm_id
-       table: poi_portugal
+   providers:
+       - type: feature
+         name: SQLiteGPKG
+         data: ./tests/data/poi_portugal.gpkg
+         id_field: osm_id
+         table: poi_portugal
 
 
 Data access examples
@@ -149,6 +162,8 @@ Data access examples
   - http://localhost:5000/collections
 - overview of dataset
   - http://localhost:5000/collections/foo
+- queryables
+  - http://localhost:5000/collections/foo/queryables
 - browse features
   - http://localhost:5000/collections/foo/items
 - paging

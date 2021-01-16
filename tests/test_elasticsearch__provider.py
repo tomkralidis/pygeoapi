@@ -37,6 +37,7 @@ from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
 def config():
     return {
         'name': 'Elasticsearch',
+        'type': 'feature',
         'data': 'http://localhost:9200/ne_110m_populated_places_simple',  # noqa
         'id_field': 'geonameid'
     }
@@ -91,6 +92,15 @@ def test_query(config):
     assert len(results['features']) == 242
     assert results['numberMatched'] == 242
     assert results['numberReturned'] == 242
+
+    results = p.query(select_properties=['nameascii'])
+    assert len(results['features'][0]['properties']) == 2
+
+    results = p.query(select_properties=['nameascii', 'scalerank'])
+    assert len(results['features'][0]['properties']) == 3
+
+    results = p.query(skip_geometry=True)
+    assert results['features'][0]['geometry'] is None
 
     config['properties'] = ['nameascii']
     p = ElasticsearchProvider(config)

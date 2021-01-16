@@ -46,6 +46,7 @@ LOGGER = logging.getLogger(__name__)
 def config_vsicurl_csv():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'CSV',
             'source': '/vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv', # noqa
@@ -85,7 +86,7 @@ def test_get_vsicurl(config_vsicurl_csv):
     p = OGRProvider(config_vsicurl_csv)
     result = p.get('32')
     assert result['id'] == 32
-    assert '11' in result['properties']['codice_regione']
+    assert '14' in result['properties']['codice_regione']
 
 
 def test_get_not_existing_feature_raise_exception(
@@ -122,7 +123,6 @@ def test_query_bbox_hits_vsicurl(config_vsicurl_csv):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits > 1
 
 

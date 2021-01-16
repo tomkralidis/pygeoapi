@@ -27,15 +27,17 @@
 #
 # =================================================================
 
-__version__ = '0.9.dev0'
+__version__ = '0.10.dev0'
 
 import click
 from pygeoapi.openapi import generate_openapi_document
 from pygeoapi.catalogue import generate_catalogue
 
 
-cli = click.Group()
-cli.version = __version__
+@click.group()
+@click.version_option(version=__version__)
+def cli():
+    pass
 
 
 @cli.command()

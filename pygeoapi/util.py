@@ -29,21 +29,30 @@
 
 """Generic util functions used in the code"""
 
+import base64
 from datetime import date, datetime, time
 from decimal import Decimal
+from enum import Enum
+import io
 import json
 import logging
 import mimetypes
 import os
 import re
+from urllib.request import urlopen
 from urllib.parse import urlparse
 
+import dateutil.parser
 from jinja2 import Environment, FileSystemLoader
+from jinja2.exceptions import TemplateNotFound
 import yaml
 
 from pygeoapi import __version__
+from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
+
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
@@ -54,7 +63,7 @@ mimetypes.add_type('text/plain', '.yml')
 
 def dategetter(date_property, collection):
     """
-    Attempts to obtains a date value from a collection.
+    Attempts to obtain a date value from a collection.
 
     :param date_property: property representing the date
     :param collection: dictionary to check within
@@ -141,16 +150,57 @@ def str2bool(value):
     return value2
 
 
-def to_json(dict_):
+def to_json(dict_, pretty=False):
     """
     Serialize dict to json
 
     :param dict_: `dict` of JSON representation
+    :param pretty: `bool` of whether to prettify JSON (default is `False`)
 
     :returns: JSON string representation
     """
 
-    return json.dumps(dict_, default=json_serial)
+    if pretty:
+        indent = 4
+    else:
+        indent = None
+
+    return json.dumps(dict_, default=json_serial,
+                      indent=indent)
+
+
+def format_datetime(value, format_=DATETIME_FORMAT):
+    """
+    Parse datetime as ISO 8601 string; re-present it in particular format
+    for display in HTML
+
+    :param value: `str` of ISO datetime
+    :param format_: `str` of datetime format for strftime
+
+    :returns: string
+    """
+
+    if not isinstance(value, str) or not value.strip():
+        return ''
+
+    return dateutil.parser.isoparse(value).strftime(format_)
+
+
+def format_duration(start, end=None):
+    """
+    Parse a start and (optional) end datetime as ISO 8601 strings, calculate
+    the difference, and return that duration as a string.
+
+    :param start: `str` of ISO datetime
+    :param end: `str` of ISO datetime, defaults to `start` for a 0 duration
+
+    :returns: string
+    """
+    if not isinstance(start, str) or not start.strip():
+        return ''
+    end = end or start
+    duration = dateutil.parser.isoparse(end) - dateutil.parser.isoparse(start)
+    return str(duration)
 
 
 def get_path_basename(urlpath):
@@ -175,6 +225,13 @@ def json_serial(obj):
 
     if isinstance(obj, (datetime, date, time)):
         return obj.isoformat()
+    elif isinstance(obj, bytes):
+        try:
+            LOGGER.debug('Returning as UTF-8 decoded bytes')
+            return obj.decode('utf-8')
+        except UnicodeDecodeError:
+            LOGGER.debug('Returning as base64 encoded JSON object')
+            return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
 
@@ -209,9 +266,19 @@ def render_j2_template(config, template, data):
     :returns: string of rendered template
     """
 
-    env = Environment(loader=FileSystemLoader(TEMPLATES))
+    custom_templates = False
+    try:
+        templates_path = config['server']['templates']['path']
+        env = Environment(loader=FileSystemLoader(templates_path))
+        custom_templates = True
+        LOGGER.debug('using custom templates: {}'.format(templates_path))
+    except (KeyError, TypeError):
+        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
+    env.filters['format_datetime'] = format_datetime
+    env.filters['format_duration'] = format_duration
     env.globals.update(to_json=to_json)
 
     env.filters['get_path_basename'] = get_path_basename
@@ -223,7 +290,17 @@ def render_j2_template(config, template, data):
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
-    template = env.get_template(template)
+    try:
+        template = env.get_template(template)
+    except TemplateNotFound as err:
+        if custom_templates:
+            LOGGER.debug(err)
+            LOGGER.debug('Custom template not found; using default')
+            env = Environment(loader=FileSystemLoader(TEMPLATES))
+            template = env.get_template(template)
+        else:
+            raise
+
     return template.render(config=config, data=data, version=__version__)
 
 
@@ -268,7 +345,7 @@ def get_breadcrumbs(urlpath):
 
 def filter_dict_by_key_value(dict_, key, value):
     """
-    helper generator function to filter a dict by a dict key
+    helper function to filter a dict by a dict key
 
     :param dict_: ``dict``
     :param key: dict key
@@ -278,3 +355,89 @@ def filter_dict_by_key_value(dict_, key, value):
     """
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
+
+
+def filter_providers_by_type(providers, type):
+    """
+    helper function to filter a list of providers by type
+
+    :param providers: ``list``
+    :param type: str
+
+    :returns: filtered ``dict`` provider
+    """
+
+    providers_ = {provider['type']: provider for provider in providers}
+    return providers_.get(type, None)
+
+
+def get_provider_by_type(providers, provider_type):
+    """
+    helper function to load a provider by a provider type
+
+    :param providers: ``list`` of providers
+    :param provider_type: type of provider (feature)
+
+    :returns: provider based on type
+    """
+
+    LOGGER.debug('Searching for provider type {}'.format(provider_type))
+    try:
+        p = (next(d for i, d in enumerate(providers)
+                  if d['type'] == provider_type))
+    except (RuntimeError, StopIteration):
+        raise ProviderTypeError('Invalid provider type requested')
+
+    return p
+
+
+def get_provider_default(providers):
+    """
+    helper function to get a resource's default provider
+
+    :param providers: ``list`` of providers
+
+    :returns: filtered ``dict``
+    """
+
+    try:
+        default = (next(d for i, d in enumerate(providers) if 'default' in d
+                   and d['default'] is True))
+        LOGGER.debug('found default provider type')
+    except StopIteration:
+        LOGGER.debug('no default provider type.  Returning first provider')
+        default = providers[0]
+
+    LOGGER.debug('Default provider: {}'.format(default['type']))
+    return default
+
+
+class JobStatus(Enum):
+    """
+    Enum for the job status options specified in the WPS 2.0 specification
+    """
+
+    #  From the specification
+    accepted = 'accepted'
+    running = 'running'
+    successful = 'successful'
+    failed = 'failed'
+    dismissed = 'dismissed'
+
+
+def read_data(path):
+    """
+    helper function to read data (file or networrk)
+    """
+
+    LOGGER.debug('Attempting to read {}'.format(path))
+    scheme = urlparse(path).scheme
+
+    if scheme in ['', 'file']:
+        LOGGER.debug('local file on disk')
+        with io.open(path, 'rb') as fh:
+            return fh.read()
+    else:
+        LOGGER.debug('network file')
+        with urlopen(path) as r:
+            return r.read()

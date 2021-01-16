@@ -1,7 +1,9 @@
 click
 Flask
+pyproj
 python-dateutil
 pytz
 PyYAML
 tinydb
+rasterio
 unicodecsv

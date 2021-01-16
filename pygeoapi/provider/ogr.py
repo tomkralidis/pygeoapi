@@ -29,9 +29,10 @@
 #
 # =================================================================
 
+import functools
 import importlib
 import logging
-import functools
+import os
 from typing import Any
 
 from osgeo import gdal as osgeo_gdal
@@ -67,6 +68,8 @@ class OGRProvider(BaseProvider):
         'WFS': 'pygeoapi.provider.ogr.WFSHelper',
         '*': 'pygeoapi.provider.ogr.CommonSourceHelper'
     }
+    os.environ['OGR_GEOJSON_MAX_OBJ_SIZE'] = os.environ.get(
+        'OGR_GEOJSON_MAX_OBJ_SIZE', '20MB')
 
     # Setting for traditional CRS axis order.
     OAMS_TRADITIONAL_GIS_ORDER = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
@@ -103,10 +106,10 @@ class OGRProvider(BaseProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.ogr.OGRProvider
+        :returns: pygeoapi.provider.ogr.OGRProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         self.ogr = osgeo_ogr
         # http://trac.osgeo.org/gdal/wiki/PythonGotchas
@@ -284,7 +287,8 @@ class OGRProvider(BaseProvider):
         return fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False):
         """
         Query OGR source
 
@@ -292,9 +296,11 @@ class OGRProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -424,6 +430,10 @@ class OGRProvider(BaseProvider):
 
     def _get_next_feature(self, layer, feature_id):
         try:
+            if layer.GetFeatureCount() == 0:
+                LOGGER.error("item {} is not found".format(feature_id))
+                raise ProviderItemNotFoundError(
+                    "item {} not found".format(feature_id))
             # Ignore gdal error
             next_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             if next_feature:
@@ -433,8 +443,9 @@ class OGRProvider(BaseProvider):
                         "Object properties are all null"
                     )
             else:
-                raise ProviderItemNotFoundError(
-                    "item {} not found".format(feature_id))
+                raise RuntimeError(
+                    "GDAL has returned a null feature for item {}".format(
+                        feature_id))
             return next_feature
         except RuntimeError as gdalerr:
             LOGGER.error(self.gdal.GetLastErrorMsg())
@@ -527,7 +538,7 @@ class SourceHelper:
 
         :param provider: provider instance
 
-        :returns: pygeoapi.providers.ogr.SourceHelper
+        :returns: pygeoapi.provider.ogr.SourceHelper
         """
         self.provider = provider
 
@@ -582,9 +593,11 @@ class CommonSourceHelper(SourceHelper):
 
         :param provider: provider instance
 
-        :returns: pygeoapi.providers.ogr.SourceHelper
+        :returns: pygeoapi.provider.ogr.SourceHelper
         """
-        SourceHelper.__init__(self, provider)
+
+        super().__init__(provider)
+
         self.startindex = -1
         self.limit = -1
         self.result_set = None
@@ -666,9 +679,10 @@ class ESRIJSONHelper(CommonSourceHelper):
 
         :param provider: provider instance
 
-        :returns: pygeoapi.providers.ogr.SourceHelper
+        :returns: pygeoapi.provider.ogr.SourceHelper
         """
-        CommonSourceHelper.__init__(self, provider)
+
+        super().__init__(provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
         """
@@ -729,9 +743,10 @@ class WFSHelper(SourceHelper):
 
         :param provider: provider instance
 
-        :returns: pygeoapi.providers.ogr.SourceHelper
+        :returns: pygeoapi.provider.ogr.SourceHelper
         """
-        SourceHelper.__init__(self, provider)
+
+        super().__init__(provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
         """
@@ -766,7 +781,7 @@ class GdalErrorHandler:
         """
         Initialize the error handler
 
-        :returns: pygeoapi.providers.ogr.GdalErrorHandler
+        :returns: pygeoapi.provider.ogr.GdalErrorHandler
         """
         self.err_level = osgeo_gdal.CE_None
         self.err_num = 0
@@ -780,7 +795,7 @@ class GdalErrorHandler:
         :param err_num: internal gdal error number
         :param err_msg: error message
 
-        :returns: pygeoapi.providers.ogr.GdalErrorHandler
+        :returns: pygeoapi.provider.ogr.GdalErrorHandler
         """
 
         err_type = {

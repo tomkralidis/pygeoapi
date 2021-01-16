@@ -13,16 +13,20 @@ supporting any level of file/directory nesting/hierarchy.
 Configuring STAC in pygeoapi is done by simply pointing the ``data`` provider property
 to the given directory and specifying allowed file types:
 
+Connection examples
+-------------------
+
 .. code-block:: yaml
 
    my-stac-resource:
        type: stac-collection
        ...
-       provider:
-           name: FileSystem
-           data: /Users/tomkralidis/Dev/data/gdps
-           file_types:
-               - .grib2
+       providers:
+           - type: stac
+             name: FileSystem
+             data: /Users/tomkralidis/Dev/data/gdps
+             file_types:
+                 - .grib2
 
 
 .. note::

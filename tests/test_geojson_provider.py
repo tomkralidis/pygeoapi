@@ -44,12 +44,16 @@ def fixture():
         'type': 'FeatureCollection',
         'features': [{
             'type': 'Feature',
+            'id': '123-456',
             'geometry': {
                 'type': 'Point',
                 'coordinates': [125.6, 10.1]},
             'properties': {
-                'id': '123-456',
-                'name': 'Dinagat Islands'}}]}
+                'name': 'Dinagat Islands',
+                'foo': 'bar'
+            }}
+        ]
+    }
 
     with open(path, 'w') as fh:
         fh.write(json.dumps(data))
@@ -60,6 +64,7 @@ def fixture():
 def config():
     return {
         'name': 'GeoJSON',
+        'type': 'feature',
         'data': path,
         'id_field': 'id'
     }
@@ -70,14 +75,19 @@ def test_query(fixture, config):
 
     fields = p.get_fields()
     assert len(fields) == 2
-    assert fields['id'] == 'string'
     assert fields['name'] == 'string'
 
     results = p.query()
     assert len(results['features']) == 1
     assert results['numberMatched'] == 1
     assert results['numberReturned'] == 1
-    assert results['features'][0]['properties']['id'] == '123-456'
+    assert results['features'][0]['id'] == '123-456'
+
+    results = p.query(select_properties=['foo'])
+    assert len(results['features'][0]['properties']) == 1
+
+    results = p.query(skip_geometry=True)
+    assert results['features'][0]['geometry'] is None
 
 
 def test_get(fixture, config):
@@ -127,11 +137,11 @@ def test_update(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
+        'id': '123-456',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]},
         'properties': {
-            'id': '123-456',
             'name': 'Null Island'}}
 
     p.update('123-456', new_feature)
@@ -139,38 +149,3 @@ def test_update(fixture, config):
     # Should be changed
     results = p.get('123-456')
     assert 'Null' in results['properties']['name']
-
-
-def test_update_safe_id(fixture, config):
-    p = GeoJSONProvider(config)
-    new_feature = {
-        'type': 'Feature',
-        'geometry': {
-            'type': 'Point',
-            'coordinates': [0.0, 0.0]},
-        'properties': {
-            'id': 'SOMETHING DIFFERENT',
-            'name': 'Null Island'}}
-
-    p.update('123-456', new_feature)
-
-    # Don't let the id change, should not exist
-    with pytest.raises(ProviderItemNotFoundError):
-        p.get('SOMETHING DIFFERENT')
-
-    # Should still be at the old id
-    results = p.get('123-456')
-    assert 'Null' in results['properties']['name']
-
-
-"""
-    def __init__(self, definition):
-        BaseProvider.__init__(self, definition)
-    def _load(self):
-    def query(self):
-    def get(self, identifier):
-    def create(self, new_feature):
-    def update(self, identifier, new_feature):
-    def delete(self, identifier):
-    def __repr__(self):
-"""

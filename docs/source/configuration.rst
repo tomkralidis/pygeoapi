@@ -44,10 +44,20 @@ The ``server`` section provides directives on binding and high level tuning.
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
     limit: 10  # server limit on number of items to return
+
+    templates: # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
+      path: /path/to/jinja2/templates/folder # path to templates folder containing the jinja2 template HTML files
+      static: /path/to/static/folder # path to static folder containing css, js, images and other static files referenced by the template
+
     map:  # leaflet map setup for HTML pages
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     ogc_schemas_location: /opt/schemas.opengis.net  # local copy of http://schemas.opengis.net
+
+    manager:  # optional OGC API - Processes asynchronous job management
+        name: TinyDB  # plugin name (see pygeoapi.plugin for supported process_manager's)
+        connection: /tmp/pygeoapi-process-manager.db  # connection info to store jobs (e.g. filepath)
+        output_dir: /tmp/  # temporary file area for storing job results (files)
 
 
 ``logging``
@@ -80,7 +90,7 @@ The ``metadata`` section provides settings for overall service metadata and desc
               - geospatial
               - data
               - api
-          keywords_type: theme  # keyword type as per the ISO 19115 MD_KeywordTypeCode codelist). Accepted values are discipline, temporal, place, theme, stratum
+          keywords_type: theme  # keyword type as per the ISO 19115 MD_KeywordTypeCode codelist. Accepted values are discipline, temporal, place, theme, stratum
           terms_of_service: https://creativecommons.org/licenses/by/4.0/  # terms of service
           url: http://example.org  # informative URL about the service
       license:  # licensing details
@@ -111,9 +121,21 @@ The ``metadata`` section provides settings for overall service metadata and desc
 The ``resources`` section lists 1 or more dataset collections to be published by the server.
 
 The ``resource.type`` property is required.  Allowed types are:
+
 - ``collection``
 - ``process``
 - ``stac-collection``
+
+The ``providers`` block is a list of 1..n providers with which to operate the data on.  Each 
+provider requires a ``type`` property.  Allowed types are:
+
+- ``feature``
+- ``coverage``
+- ``tile``
+
+A collection's default provider can be qualified with ``default: true`` in the provider
+configuration.  If ``default`` is not included, the *first* provider is assumed to be the
+default.
 
 .. code-block:: yaml
 
@@ -143,18 +165,25 @@ The ``resource.type`` property is required.  Allowed types are:
               temporal:  # optional
                   begin: 2000-10-30T18:24:39Z  # start datetime in RFC3339
                   end: 2007-10-30T08:57:29Z  # end datetime in RFC3339
-          provider:  # required connection information
+          providers:  # list of 1..n required connections information
               # provider name
               # see pygeoapi.plugin for supported providers
               # for custom built plugins, use the import path (e.g. mypackage.provider.MyProvider)
               # see Plugins section for more information
-              name: CSV
-              data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
-              id_field: id  # required for vector data, the field corresponding to the ID
-              time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
-              properties:  # optional: only return the following properties, in order
-                  - stn_id
-                  - value
+              - type: feature # underlying data geospatial type: (allowed values are: feature, coverage)
+                default: true  # optional: if not specified, the first provider definition is considered the default
+                name: CSV
+                data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
+                id_field: id  # required for vector data, the field corresponding to the ID
+                time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
+                format:  # optional default format
+                    name: GeoJSON  # required: format name
+                    mimetype: application/json  # required: format mimetype
+                options:  # optional options to pass to provider (i.e. GDAL creation)
+                    option_name: option_value
+                properties:  # optional: only return the following properties, in order
+                    - stn_id
+                    - value
 
       hello-world:  # name of process
           type: collection  # REQUIRED (collection, process, or stac-collection)
@@ -250,6 +279,7 @@ This example demonstrates how to use this feature with a CSV data provider, usin
 implementation of JSON-LD structured data is available for any data provider but is currently limited to defining a
 ``@context``.  Relationships between items can be expressed but is dependent on such relationships being expressed
 by the dataset provider, not pygeoapi.
+
 
 Summary
 -------

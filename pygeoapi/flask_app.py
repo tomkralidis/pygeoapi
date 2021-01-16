@@ -34,13 +34,11 @@ import os
 
 import click
 
-from flask import Flask, make_response, request, send_from_directory
+from flask import Flask, Blueprint, make_response, request, send_from_directory
 
 from pygeoapi.api import API
 from pygeoapi.util import get_mimetype, yaml_load
 
-APP = Flask(__name__)
-APP.url_map.strict_slashes = False
 
 CONFIG = None
 
@@ -49,6 +47,15 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
+
+STATIC_FOLDER = 'static'
+if 'templates' in CONFIG['server']:
+    STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
+
+APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
+APP.url_map.strict_slashes = False
+
+BLUEPRINT = Blueprint('pygeoapi', __name__, static_folder=STATIC_FOLDER)
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
@@ -89,14 +96,15 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
-@APP.route('/')
-def root():
+@BLUEPRINT.route('/')
+def landing_page():
     """
-    HTTP root content of pygeoapi. Intro page access point
+    OGC API landing page endpoint
 
     :returns: HTTP response
     """
-    headers, status_code, content = api_.root(request.headers, request.args)
+    headers, status_code, content = api_.landing_page(
+        request.headers, request.args)
 
     response = make_response(content, status_code)
 
@@ -106,10 +114,10 @@ def root():
     return response
 
 
-@APP.route('/openapi')
+@BLUEPRINT.route('/openapi')
 def openapi():
     """
-    OpenAPI access point
+    OpenAPI endpoint
 
     :returns: HTTP response
     """
@@ -127,10 +135,10 @@ def openapi():
     return response
 
 
-@APP.route('/conformance')
+@BLUEPRINT.route('/conformance')
 def conformance():
     """
-    OGC open api conformance access point
+    OGC API conformance endpoint
 
     :returns: HTTP response
     """
@@ -146,19 +154,19 @@ def conformance():
     return response
 
 
-@APP.route('/collections')
-@APP.route('/collections/<name>')
-def describe_collections(name=None):
+@BLUEPRINT.route('/collections')
+@BLUEPRINT.route('/collections/<collection_id>')
+def collections(collection_id=None):
     """
-    OGC open api collections access point
+    OGC API collections endpoint
 
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
 
     :returns: HTTP response
     """
 
     headers, status_code, content = api_.describe_collections(
-        request.headers, request.args, name)
+        request.headers, request.args, collection_id)
 
     response = make_response(content, status_code)
 
@@ -168,18 +176,18 @@ def describe_collections(name=None):
     return response
 
 
-@APP.route('/collections/<name>/queryables')
-def get_collection_queryables(name=None):
+@BLUEPRINT.route('/collections/<collection_id>/queryables')
+def collection_queryables(collection_id=None):
     """
-    OGC open api collections querybles access point
+    OGC API collections querybles endpoint
 
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
 
     :returns: HTTP response
     """
 
     headers, status_code, content = api_.get_collection_queryables(
-        request.headers, request.args, name)
+        request.headers, request.args, collection_id)
 
     response = make_response(content, status_code)
 
@@ -189,11 +197,14 @@ def get_collection_queryables(name=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/items')
-@APP.route('/collections/<collection_id>/items/<item_id>')
-def dataset(collection_id, item_id=None):
+@BLUEPRINT.route('/collections/<collection_id>/items')
+@BLUEPRINT.route('/collections/<collection_id>/items/<item_id>')
+def collection_items(collection_id, item_id=None):
     """
-    OGC open api collections/{dataset}/items/{item} access point
+    OGC API collections items endpoint
+
+    :param collection_id: collection identifier
+    :param item_id: item identifier
 
     :returns: HTTP response
     """
@@ -213,10 +224,247 @@ def dataset(collection_id, item_id=None):
     return response
 
 
-@APP.route('/stac')
+@BLUEPRINT.route('/collections/<collection_id>/coverage')
+def collection_coverage(collection_id):
+    """
+    OGC API - Coverages coverage endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/collections/<collection_id>/coverage/domainset')
+def collection_coverage_domainset(collection_id):
+    """
+    OGC API - Coverages coverage domainset endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_domainset(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/collections/<collection_id>/coverage/rangetype')
+def collection_coverage_rangetype(collection_id):
+    """
+    OGC API - Coverages coverage rangetype endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_rangetype(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/collections/<collection_id>/tiles')
+def get_collection_tiles(collection_id=None):
+    """
+    OGC open api collections tiles access point
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
+def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
+    """
+    OGC open api collection tiles service metadata
+
+    :param collection_id: collection identifier
+    :param tileMatrixSetId: identifier of tile matrix set
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles_metadata(
+        request.headers, request.args, collection_id, tileMatrixSetId)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/collections/<collection_id>/tiles/\
+<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
+def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
+                              tileMatrix=None, tileRow=None, tileCol=None):
+    """
+    OGC open api collection tiles service data
+
+    :param collection_id: collection identifier
+    :param tileMatrixSetId: identifier of tile matrix set
+    :param tileMatrix: identifier of {z} matrix index
+    :param tileRow: identifier of {y} matrix index
+    :param tileCol: identifier of {x} matrix index
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles_data(
+        request.headers, request.args, collection_id,
+        tileMatrixSetId, tileMatrix, tileRow, tileCol)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/processes')
+@BLUEPRINT.route('/processes/<process_id>')
+def get_processes(process_id=None):
+    """
+    OGC API - Processes description endpoint
+
+    :param process_id: process identifier
+
+    :returns: HTTP response
+    """
+    headers, status_code, content = api_.describe_processes(
+        request.headers, request.args, process_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>',
+                 methods=['GET', 'DELETE'])
+def get_process_jobs(process_id=None, job_id=None):
+    """
+    OGC API - Processes jobs endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier
+
+    :returns: HTTP response
+    """
+
+    if job_id is None:
+        if request.method == 'GET':  # list jobs
+            headers, status_code, content = api_.get_process_jobs(
+                request.headers, request.args, process_id)
+        elif request.method == 'POST':  # submit job
+            headers, status_code, content = api_.execute_process(
+                request.headers, request.args, request.data, process_id)
+    else:
+        if request.method == 'DELETE':  # dismiss job
+            headers, status_code, content = api_.delete_process_job(
+                process_id, job_id)
+        else:  # Return status of a specific job
+            headers, status_code, content = api_.get_process_jobs(
+                request.headers, request.args, process_id, job_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/processes/<process_id>/jobs/<job_id>/results', methods=['GET'])
+def get_process_job_result(process_id=None, job_id=None):
+    """
+    OGC API - Processes job result endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_process_job_result(
+        request.headers, request.args, process_id, job_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/processes/<process_id>/jobs/<job_id>/results/<resource>',
+           methods=['GET'])
+def get_process_job_result_resource(process_id, job_id, resource):
+    """
+    OGC API - Processes job result resource endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier
+    :param resource: job resource
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_process_job_result_resource(
+        request.headers, request.args, process_id, job_id, resource)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/stac')
 def stac_catalog_root():
     """
-    STAC access point
+    STAC root endpoint
 
     :returns: HTTP response
     """
@@ -232,10 +480,12 @@ def stac_catalog_root():
     return response
 
 
-@APP.route('/stac/<path:path>')
+@BLUEPRINT.route('/stac/<path:path>')
 def stac_catalog_path(path):
     """
-    STAC access point
+    STAC path endpoint
+
+    :param path: path
 
     :returns: HTTP response
     """
@@ -251,47 +501,7 @@ def stac_catalog_path(path):
     return response
 
 
-@APP.route('/processes')
-@APP.route('/processes/<name>')
-def describe_processes(name=None):
-    """
-    OGC open api processes access point (experimental)
-
-    :param name: identifier of process to describe
-    :returns: HTTP response
-    """
-    headers, status_code, content = api_.describe_processes(
-        request.headers, request.args, name)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
-
-
-@APP.route('/processes/<name>/jobs', methods=['GET', 'POST'])
-def execute_process(name=None):
-    """
-    OGC open api jobs from processes access point (experimental)
-
-    :param name: identifier of process to execute
-    :returns: HTTP response
-    """
-
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
-        headers, status_code, content = api_.execute_process(
-            request.headers, request.args, request.data, name)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+APP.register_blueprint(BLUEPRINT)
 
 
 @click.command()
@@ -304,11 +514,11 @@ def serve(ctx, server=None, debug=False):
 
     :param server: `string` of server type
     :param debug: `bool` of whether to run in debug mode
-    :returns void
 
+    :returns: void
     """
 
-#    setup_logger(CONFIG['logging'])
+    # setup_logger(CONFIG['logging'])
     APP.run(debug=True, host=api_.config['server']['bind']['host'],
             port=api_.config['server']['bind']['port'])
 

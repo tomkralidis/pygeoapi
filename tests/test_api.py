@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,14 +30,14 @@
 import json
 import os
 import logging
+import time
 
+from pyld import jsonld
 import pytest
-
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
-from pygeoapi.api import API, check_format
+from pygeoapi.api import API, check_format, validate_bbox, validate_datetime
 from pygeoapi.util import yaml_load
-from pyld import jsonld
 
 LOGGER = logging.getLogger(__name__)
 
@@ -53,6 +53,14 @@ def get_test_file_path(filename):
 
 def make_req_headers(**kwargs):
     environ = create_environ('/collections/obs/items',
+                             'http://localhost:5000/')
+    environ.update(kwargs)
+    request = Request(environ)
+    return request.headers
+
+
+def make_lakes_req_headers(**kwargs):
+    environ = create_environ('/collections/lakes/items',
                              'http://localhost:5000/')
     environ.update(kwargs)
     request = Request(environ)
@@ -101,13 +109,13 @@ def test_api(config, api_, openapi):
 
 def test_api_exception(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.root(req_headers, {'f': 'foo'})
+    rsp_headers, code, response = api_.landing_page(req_headers, {'f': 'foo'})
     assert code == 400
 
 
 def test_root(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.root(req_headers, {})
+    rsp_headers, code, response = api_.landing_page(req_headers, {})
     root = json.loads(response)
 
     assert rsp_headers['Content-Type'] == 'application/json'
@@ -128,13 +136,14 @@ def test_root(config, api_):
     assert 'description' in root
     assert root['description'] == 'pygeoapi provides an API to geospatial data'
 
-    rsp_headers, code, response = api_.root(req_headers, {'f': 'html'})
+    rsp_headers, code, response = api_.landing_page(req_headers, {'f': 'html'})
     assert rsp_headers['Content-Type'] == 'text/html'
 
 
 def test_root_structured_data(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.root(req_headers, {"f": "jsonld"})
+    rsp_headers, code, response = api_.landing_page(
+        req_headers, {"f": "jsonld"})
     root = json.loads(response)
 
     assert rsp_headers['Content-Type'] == 'application/ld+json'
@@ -168,7 +177,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 4
+    assert len(root['conformsTo']) == 9
 
     rsp_headers, code, response = api_.conformance(req_headers, {'f': 'foo'})
     assert code == 400
@@ -192,7 +201,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 1
+    assert len(collections['collections']) == 4
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(
@@ -226,6 +235,13 @@ def test_describe_collections(config, api_):
         req_headers, {'f': 'html'}, 'obs')
     assert rsp_headers['Content-Type'] == 'text/html'
 
+    rsp_headers, code, response = api_.describe_collections(
+        req_headers, {}, 'gdps-temperature')
+    collection = json.loads(response)
+
+    assert collection['id'] == 'gdps-temperature'
+    assert len(collection['links']) == 12
+
 
 def test_get_collection_queryables(config, api_):
     req_headers = make_req_headers()
@@ -246,7 +262,7 @@ def test_get_collection_queryables(config, api_):
     assert len(queryables['queryables']) == 6
 
     # test with provider filtered properties
-    api_.config['resources']['obs']['provider']['properties'] = ['stn_id']
+    api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
 
     rsp_headers, code, response = api_.get_collection_queryables(
         req_headers, {'f': 'json'}, 'obs')
@@ -487,6 +503,16 @@ def test_get_collection_items(config, api_):
 
     assert code == 200
 
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'skipGeometry': 'true'}, 'obs')
+
+    assert json.loads(response)['features'][0]['geometry'] is None
+
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'properties': 'foo,bar'}, 'obs')
+
+    assert code == 400
+
 
 def test_get_collection_items_json_ld(config, api_):
     req_headers = make_req_headers()
@@ -529,6 +555,11 @@ def test_get_collection_item(config, api_):
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.get_collection_item(
         req_headers, {'f': 'foo'}, 'obs', '371')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_item(
+        req_headers, {'f': 'json'}, 'gdps-temperature', '371')
 
     assert code == 400
 
@@ -579,85 +610,394 @@ def test_get_collection_item_json_ld(config, api_):
         'https://schema.org/identifier'][0]['@value'] == '35'
 
 
+def test_get_coverage_domainset(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_coverage_domainset(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage_domainset(
+        req_headers, {}, 'gdps-temperature')
+
+    domainset = json.loads(response)
+
+    assert domainset['type'] == 'DomainSetType'
+    assert domainset['generalGrid']['axisLabels'] == ['Long', 'Lat']
+    assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
+    assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 2400  # noqa
+    assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 1201  # noqa
+
+
+def test_get_collection_coverage_rangetype(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_coverage_rangetype(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage_rangetype(
+        req_headers, {}, 'gdps-temperature')
+
+    rangetype = json.loads(response)
+
+    assert rangetype['type'] == 'DataRecordType'
+    assert len(rangetype['field']) == 1
+    assert rangetype['field'][0]['id'] == 1
+    assert rangetype['field'][0]['name'] == 'Temperature [C]'
+    assert rangetype['field'][0]['uom']['code'] == '[C]'
+
+
+def test_get_collection_coverage(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'rangeSubset': '12'}, 'gdps-temperature')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'bad_axis(10:20)'}, 'gdps-temperature')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'f': 'blah'}, 'gdps-temperature')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'Lat(5:10),Long(5:10)'}, 'gdps-temperature')
+
+    assert code == 200
+    content = json.loads(response)
+
+    assert content['domain']['axes']['x']['num'] == 35
+    assert content['domain']['axes']['y']['num'] == 35
+    assert 'TMP' in content['parameters']
+    assert 'TMP' in content['ranges']
+    assert content['ranges']['TMP']['axisNames'] == ['y', 'x']
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'bbox': '-79,45,-75,49'}, 'gdps-temperature')
+
+    assert code == 200
+    content = json.loads(response)
+
+    assert content['domain']['axes']['x']['start'] == -79.0
+    assert content['domain']['axes']['x']['stop'] == -75.0
+    assert content['domain']['axes']['y']['start'] == 49.0
+    assert content['domain']['axes']['y']['stop'] == 45.0
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'Lat(5:10),Long(5:10)', 'f': 'GRIB'},
+        'gdps-temperature')
+
+    assert code == 200
+    assert isinstance(response, bytes)
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'}, 'cmip5')  # noqa
+
+    assert code == 200
+    assert isinstance(json.loads(response), dict)
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'lat(1:2'}, 'cmip5')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'lat(1:2)'}, 'cmip5')
+
+    assert code == 204
+
+
+def test_get_collection_tiles(config, api_):
+    req_headers = make_lakes_req_headers()
+    rsp_headers, code, response = api_.get_collection_tiles(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+    req_headers = make_lakes_req_headers()
+    rsp_headers, code, response = api_.get_collection_tiles(
+        req_headers, {}, 'lakes')
+
+    assert code == 200
+
+
 def test_describe_processes(config, api_):
     req_headers = make_req_headers()
+
+    # Test for undefined process
     rsp_headers, code, response = api_.describe_processes(
         req_headers, {}, 'foo')
-    processes = json.loads(response)
-
+    data = json.loads(response)
     assert code == 404
+    assert data['code'] == 'NoSuchProcess'
 
-    rsp_headers, code, response = api_.describe_processes(req_headers, {})
-    processes = json.loads(response)
+    # Test for description of all processes
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {})
+    data = json.loads(response)
+    assert code == 200
+    assert len(data['processes']) == 1
 
-    assert len(processes['processes']) == 1
-
+    # Test for particular, defined procss
     rsp_headers, code, response = api_.describe_processes(
         req_headers, {}, 'hello-world')
     process = json.loads(response)
-
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'application/json'
     assert process['id'] == 'hello-world'
-    assert process['title'] == 'Hello World process'
-    assert process['description'] == 'Hello World process'
-    assert len(process['links']) == 1
-    assert len(process['inputs']) == 1
+    assert process['version'] == '0.2.0'
+    assert process['title'] == 'Hello World'
+    assert len(process['keywords']) == 3
+    assert len(process['links']) == 3
+    assert len(process['inputs']) == 2
     assert len(process['outputs']) == 1
     assert len(process['outputTransmission']) == 1
-    assert len(process['jobControlOptions']) == 1
+    assert len(process['jobControlOptions']) == 2
+    assert 'sync-execute' in process['jobControlOptions']
+    assert 'async-execute' in process['jobControlOptions']
 
-    api_.config['resources'] = {}
+    # Check HTML response when requested in headers
+    req_headers = make_req_headers(HTTP_ACCEPT='text/html')
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {}, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'text/html'
 
+    # Check JSON response when requested in headers
+    req_headers = make_req_headers(HTTP_ACCEPT='application/json')
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {}, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'application/json'
+
+    # Check HTML response when requested with query parameter
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'foo')
-    processes = json.loads(response)
-    assert len(processes['processes']) == 0
+        req_headers, {'f': 'html'}, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'text/html'
 
+    # Check JSON response when requested with query parameter
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'foo')
-    processes = json.loads(response)
-    assert len(processes['processes']) == 0
+        req_headers, {'f': 'json'}, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'application/json'
+
+    # Test for undefined process
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {}, 'goodbye-world')
+    data = json.loads(response)
+    assert code == 404
+    assert data['code'] == 'NoSuchProcess'
+    assert rsp_headers['Content-Type'] == 'application/json'
 
 
 def test_execute_process(config, api_):
-    req_body = {'inputs': [{'id': 'name', 'value': 'test'}]}
-
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.execute_process(req_headers, {}, '',
-                                                       'hello-world')
-    response = json.loads(response)
+    req_body = {
+        'inputs': [{
+            'id': 'name',
+            'value': 'Test'
+        }]
+    }
+    req_body_2 = {
+        'inputs': [{
+            'id': 'name',
+            'value': 'Tést'
+        }]
+    }
+    req_body_3 = {
+        'inputs': [{
+            'id': 'name',
+            'value': 'Tést'
+        }, {
+            'id': 'message',
+            'value': 'This is a test.'
+        }]
+    }
+    req_body_4 = {
+        'inputs': [{
+            'id': 'foo',
+            'value': 'Tést'
+        }]
+    }
+    req_body_5 = {
+        'inputs': []
+    }
+    req_body_6 = {
+        'inputs': [{
+            'id': 'name',
+            'value': None
+        }]
+    }
+    req_body_7 = {
+        'inputs': [{
+            'id': 'name'
+        }]
+    }
+    req_body_8 = {
+        'inputs': [{
+            'value': 'Test'
+        }]
+    }
+
+    cleanup_jobs = set()
+
+    # Test posting empty payload to existing process
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, '', 'hello-world')
+
+    data = json.loads(response)
     assert code == 400
+    assert 'Location' not in rsp_headers
+    assert data['code'] == 'MissingParameterValue'
 
-    rsp_headers, code, response = api_.execute_process(req_headers, {},
-                                                       json.dumps(req_body),
-                                                       'foo')
-    response = json.loads(response)
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body), 'foo')
 
+    data = json.loads(response)
     assert code == 404
+    assert 'Location' not in rsp_headers
+    assert data['code'] == 'NoSuchProcess'
 
-    rsp_headers, code, response = api_.execute_process(req_headers, {},
-                                                       json.dumps(req_body),
-                                                       'hello-world')
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body), 'hello-world')
+
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+    assert len(data['outputs']) == 1
+    assert data['outputs'][0]['id'] == 'echo'
+    assert data['outputs'][0]['value'] == 'Hello Test!'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_2), 'hello-world')
+
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+    assert data['outputs'][0]['value'] == 'Hello Tést!'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_3), 'hello-world')
+
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+    assert data['outputs'][0]['value'] == 'Hello Tést! This is a test.'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_4), 'hello-world')
+
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_5), 'hello-world')
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'Error updating job'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_6), 'hello-world')
+
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'Error updating job'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_7), 'hello-world')
+
+    data = json.loads(response)
+    assert code == 400
+    assert 'Location' not in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'invalid request data'
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_8), 'hello-world')
+
+    data = json.loads(response)
+    assert code == 400
+    assert 'Location' not in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'invalid request data'
+
+    # req_headers = make_req_headers()
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body), 'goodbye-world')
+
     response = json.loads(response)
-
-    assert response['outputs'][0]['value'] == 'test'
-
-    api_.config['resources'] = {}
+    assert code == 404
+    assert 'Location' not in rsp_headers
+    assert response['code'] == 'NoSuchProcess'
 
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.execute_process(req_headers, {},
-                                                       json.dumps(req_body),
-                                                       'hello-world')
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body), 'hello-world')
+
     response = json.loads(response)
-    assert response['code'] == 'NotFound'
+    assert code == 200
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
 
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.execute_process(req_headers, {},
-                                                       json.dumps(req_body),
-                                                       'hello-world')
+
+    req_body['mode'] = 'async'
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body), 'hello-world')
+
+    assert 'Location' in rsp_headers
     response = json.loads(response)
-    assert response['code'] == 'NotFound'
+    assert isinstance(response, dict)
+
+    assert code == 201
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    # Cleanup
+    time.sleep(2)  # Allow time for any outstanding async jobs
+    for process_id, job_id in cleanup_jobs:
+        rsp_headers, code, response = api_.delete_process_job(
+            process_id, job_id)
+        assert code == 200
 
 
 def test_check_format():
@@ -717,3 +1057,115 @@ def test_check_format():
     req_headers = make_req_headers(HTTP_ACCEPT='text/html')
     args['f'] = 'json'
     assert check_format(args, req_headers) == 'json'
+
+
+def test_delete_process_job(api_):
+    rsp_headers, code, response = api_.delete_process_job(
+        'does-not-exist', 'does-not-exist')
+
+    assert code == 404
+
+    req_headers = make_req_headers()
+    req_body_sync = {
+        'inputs': [{
+            'id': 'name',
+            'value': 'Sync Test Deletion'
+        }]
+    }
+
+    req_body_async = {
+        'mode': 'async',
+        'inputs': [{
+            'id': 'name',
+            'value': 'Async Test Deletion'
+        }]
+    }
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_sync), 'hello-world')
+
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+    assert data['outputs'][0]['value'] == 'Hello Sync Test Deletion!'
+
+    job_id = rsp_headers['Location'].split('/')[-1]
+    rsp_headers, code, response = api_.delete_process_job(
+        'hello-world', job_id)
+
+    assert code == 200
+
+    rsp_headers, code, response = api_.delete_process_job(
+        'hello-world', job_id)
+    assert code == 404
+
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body_async), 'hello-world')
+
+    assert code == 201
+    assert 'Location' in rsp_headers
+
+    time.sleep(2)  # Allow time for async execution to complete
+    job_id = rsp_headers['Location'].split('/')[-1]
+    rsp_headers, code, response = api_.delete_process_job(
+        'hello-world', job_id)
+    assert code == 200
+
+    rsp_headers, code, response = api_.delete_process_job(
+        'hello-world', job_id)
+    assert code == 404
+
+
+def test_validate_bbox():
+    assert validate_bbox('1,2,3,4') == [1, 2, 3, 4]
+    assert validate_bbox('-142,42,-52,84') == [-142, 42, -52, 84]
+    assert (validate_bbox('-142.1,42.12,-52.22,84.4') ==
+            [-142.1, 42.12, -52.22, 84.4])
+
+    with pytest.raises(ValueError):
+        validate_bbox('1,2,4')
+
+    with pytest.raises(ValueError):
+        validate_bbox('3,4,1,2')
+
+
+def test_validate_datetime():
+    config = yaml_load('''
+        temporal:
+            begin: 2000-10-30T18:24:39Z
+            end: 2007-10-30T08:57:29Z
+    ''')
+
+    # test time instant
+    assert validate_datetime(config, '2004') == '2004'
+    assert validate_datetime(config, '2004-10') == '2004-10'
+    assert validate_datetime(config, '2001-10-30') == '2001-10-30'
+
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2009-10-30')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2000-09-09')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2000-10-30T17:24:39Z')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2007-10-30T08:58:29Z')
+
+    # test time envelope
+    assert validate_datetime(config, '2004/2005') == '2004/2005'
+    assert validate_datetime(config, '2004-10/2005-10') == '2004-10/2005-10'
+    assert (validate_datetime(config, '2001-10-30/2002-10-30') ==
+            '2001-10-30/2002-10-30')
+    assert validate_datetime(config, '2004/..') == '2004/..'
+    assert validate_datetime(config, '../2005') == '../2005'
+    assert validate_datetime(config, '2004-10/2005-10') == '2004-10/2005-10'
+    assert (validate_datetime(config, '2001-10-30/2002-10-30') ==
+            '2001-10-30/2002-10-30')
+
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '1999/..')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2000/..')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '../2007')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '../2010')

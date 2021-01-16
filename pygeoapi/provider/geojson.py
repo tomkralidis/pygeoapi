@@ -64,7 +64,8 @@ class GeoJSONProvider(BaseProvider):
 
     def __init__(self, provider_def):
         """initializer"""
-        BaseProvider.__init__(self, provider_def)
+
+        super().__init__(provider_def)
         self.fields = self.get_fields()
 
     def get_fields(self):
@@ -83,7 +84,7 @@ class GeoJSONProvider(BaseProvider):
                 fields[f] = 'string'
             return fields
 
-    def _load(self):
+    def _load(self, skip_geometry=None, select_properties=[]):
         """Load and validate the source GeoJSON file
         at self.data
 
@@ -103,12 +104,18 @@ class GeoJSONProvider(BaseProvider):
         assert data['type'] == 'FeatureCollection'
         # All features must have ids, TODO must be unique strings
         for i in data['features']:
-            i['id'] = i['properties'][self.id_field]
-
+            if 'id' not in i and self.id_field in i['properties']:
+                i['id'] = i['properties'][self.id_field]
+            if skip_geometry:
+                i['geometry'] = None
+            if self.properties or select_properties:
+                i['properties'] = {k: v for k, v in i['properties'].items()
+                                   if k in set(self.properties) | set(select_properties)}  # noqa
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False):
         """
         query the provider
 
@@ -116,15 +123,18 @@ class GeoJSONProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
 
         # TODO filter by bbox without resorting to third-party libs
-        data = self._load()
+        data = self._load(skip_geometry=skip_geometry,
+                          select_properties=select_properties)
 
         data['numberMatched'] = len(data['features'])
 
@@ -145,10 +155,10 @@ class GeoJSONProvider(BaseProvider):
         """
 
         all_data = self._load()
+        # if matches
         for feature in all_data['features']:
-            if str(feature['properties'][self.id_field]) == identifier:
+            if str(feature.get('id')) == identifier:
                 return feature
-
         # default, no match
         err = 'item {} not found'.format(identifier)
         LOGGER.error(err)
@@ -159,10 +169,12 @@ class GeoJSONProvider(BaseProvider):
 
         :param new_feature: new GeoJSON feature dictionary
         """
+
         all_data = self._load()
 
-        # Hijack the feature id and make sure it's unique
-        new_feature['properties']['id'] = str(uuid.uuid4())
+        if self.id_field not in new_feature and\
+           self.id_field not in new_feature['properties']:
+            new_feature['properties'][self.id_field] = str(uuid.uuid4())
 
         all_data['features'].append(new_feature)
 
@@ -178,27 +190,31 @@ class GeoJSONProvider(BaseProvider):
 
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
-            if feature['properties']['id'] == identifier:
-                # ensure new_feature retains id
-                new_feature['properties']['id'] = identifier
-                all_data['features'][i] = new_feature
-                break
-
+            if self.id_field in feature:
+                if feature[self.id_field] == identifier:
+                    new_feature['properties'][self.id_field] = identifier
+                    all_data['features'][i] = new_feature
+            elif self.id_field in feature['properties']:
+                if feature['properties'][self.id_field] == identifier:
+                    new_feature['properties'][self.id_field] = identifier
+                    all_data['features'][i] = new_feature
         with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def delete(self, identifier):
-        """Updates an existing feature id with new_feature
+        """Deletes an existing feature
 
         :param identifier: feature id
         """
 
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
-            if feature['properties']['id'] == identifier:
-                all_data['features'].pop(i)
-                break
-
+            if self.id_field in feature:
+                if feature[self.id_field] == identifier:
+                    all_data['features'].pop(i)
+            elif self.id_field in feature['properties']:
+                if feature['properties'][self.id_field] == identifier:
+                    all_data['features'].pop(i)
         with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 

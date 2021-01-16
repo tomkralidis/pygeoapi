@@ -50,7 +50,7 @@ class FileSystemProvider(BaseProvider):
         :returns: pygeoapi.provider.filesystem.FileSystemProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         if not os.path.exists(self.data):
             msg = 'Directory does not exist: {}'.format(self.data)
@@ -140,7 +140,12 @@ class FileSystemProvider(BaseProvider):
                 return fh.read()
 
         elif resource_type == 'directory':
-            for dc in os.listdir(data_path):
+            dirpath2 = os.listdir(data_path)
+            dirpath2.sort()
+            for dc in dirpath2:
+                # @TODO: handle a generic directory for tiles
+                if dc == "tiles":
+                    continue
                 fullpath = os.path.join(data_path, dc)
                 if os.path.isdir(fullpath):
                     newpath = os.path.join(baseurl, urlpath, dc)
@@ -216,6 +221,8 @@ def _describe_file(filepath):
 
     try:
         import rasterio
+        from rasterio.crs import CRS
+        from rasterio.warp import transform_bounds
         LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
     except ImportError as err:
         LOGGER.warning(err)
@@ -252,31 +259,41 @@ def _describe_file(filepath):
     except rasterio.errors.RasterioIOError:
         LOGGER.debug('Testing vector data detection')
         d = fiona.open(filepath)
+        scrs = CRS(d.crs)
+        if scrs.to_epsg() is not None and scrs.to_epsg() != 4326:
+            tcrs = CRS.from_epsg(4326)
+            bnds = transform_bounds(scrs, tcrs,
+                                    d.bounds[0], d.bounds[1],
+                                    d.bounds[2], d.bounds[3])
+            content['properties']['projection'] = scrs.to_epsg()
+        else:
+            bnds = d.bounds
 
         if d.schema['geometry'] not in [None, 'None']:
             content['bbox'] = [
-                d.bounds[0],
-                d.bounds[1],
-                d.bounds[2],
-                d.bounds[3]
+                bnds[0],
+                bnds[1],
+                bnds[2],
+                bnds[3]
             ]
             content['geometry'] = {
                 'type': 'Polygon',
                 'coordinates': [[
-                    [d.bounds[0], d.bounds[1]],
-                    [d.bounds[0], d.bounds[3]],
-                    [d.bounds[2], d.bounds[3]],
-                    [d.bounds[2], d.bounds[1]],
-                    [d.bounds[0], d.bounds[1]]
+                    [bnds[0], bnds[1]],
+                    [bnds[0], bnds[3]],
+                    [bnds[2], bnds[3]],
+                    [bnds[2], bnds[1]],
+                    [bnds[0], bnds[1]]
                 ]]
             }
+
         for k, v in d.schema['properties'].items():
             content['properties'][k] = v
 
         if d.driver == 'ESRI Shapefile':
             id_ = os.path.splitext(os.path.basename(filepath))[0]
             content['assets'] = {}
-            for suffix in ['shx', 'dbf', 'prj']:
+            for suffix in ['shx', 'dbf', 'prj', 'shp.xml']:
                 content['assets'][suffix] = {
                     'href': './{}.{}'.format(id_, suffix)
                 }
