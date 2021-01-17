@@ -87,11 +87,17 @@ metadata:
         instructions: During hours of service. Off on weekends.
         role: pointOfContact
     catalogue:
-        provider:
-            name: TinyDBCatalogue
-            data: /tmp/tinydb-records.json
-            id_field: identifier
-            time_field: datetime
+        providers:
+            - type: feature
+              name: TinyDBCatalogue
+              data: tests/data/records.json
+              id_field: id
+              time_field: timestamp
+              source_field: source
+              source_schema_field: iso19139
+              geometry:
+                x_field: lon
+                y_field: lat
 
 resources:
     obs:

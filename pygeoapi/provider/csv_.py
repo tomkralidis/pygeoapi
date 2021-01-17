@@ -145,7 +145,7 @@ class CSVProvider(BaseProvider):
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
+              bbox=[], datetime_=None, properties=[], sortby=[], q=None,
               select_properties=[], skip_geometry=False):
         """
         CSV query

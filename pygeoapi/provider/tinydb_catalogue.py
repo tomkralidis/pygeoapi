@@ -30,6 +30,7 @@
 import json
 import logging
 import os
+import re
 
 from tinydb import TinyDB, Query
 
@@ -60,8 +61,12 @@ class TinyDBCatalogueProvider(BaseProvider):
             LOGGER.warning('TinyDB does not exist; creating')
 
         self.db = TinyDB(self.data)
-
         self.fields = self.get_fields()
+        self.id_field = provider_def['id_field']
+        self.geometry = provider_def['geometry']
+        self.time_field = provider_def['time_field']
+        self.source_field = provider_def['source_field']
+        self.source_schema_field = provider_def['source_schema_field']
 
     def get_fields(self):
         """
@@ -78,15 +83,18 @@ class TinyDBCatalogueProvider(BaseProvider):
             LOGGER.debug(err)
             return fields
 
-        for p in r['properties'].keys():
-            if p in ['_anytext', '_raw_metadata']:
-                continue
-            fields[p] = 'string'
+        if r.keys():
+            for p in r.keys():
+                if p in ['_anytext', '_raw_metadata']:
+                    continue
+                fields[p] = 'string'
 
         return fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[], q=None):
+              bbox=[], datetime_=None, properties=[], sortby=[], q=None,
+                              select_properties=[],
+                              skip_geometry=None):
         """
         query TinyDB document store
 
@@ -94,7 +102,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
         :param q: full-text search term(s)
@@ -102,7 +110,6 @@ class TinyDBCatalogueProvider(BaseProvider):
         :returns: dict of 0..n records
         """
 
-        return self.db.all()
         query = {'track_total_hits': True, 'query': {'bool': {'filter': []}}}
         filter_ = []
 
@@ -132,7 +139,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
             query['query']['bool']['filter'].append(bbox_filter)
 
-        if datetime is not None:
+        if datetime_ is not None:
             LOGGER.debug('processing datetime parameter')
             if self.time_field is None:
                 LOGGER.error('time_field not enabled for collection')
@@ -140,9 +147,9 @@ class TinyDBCatalogueProvider(BaseProvider):
 
             time_field = self.mask_prop(self.time_field)
 
-            if '/' in datetime:  # envelope
+            if '/' in datetime_:  # envelope
                 LOGGER.debug('detected time range')
-                time_begin, time_end = datetime.split('/')
+                time_begin, time_end = datetime_.split('/')
 
                 range_ = {
                     'range': {
@@ -161,7 +168,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
             else:  # time instant
                 LOGGER.debug('detected time instant')
-                filter_.append({'match': {time_field: datetime}})
+                filter_.append({'match': {time_field: datetime_}})
 
             LOGGER.debug(filter_)
             query['query']['bool']['filter'].append(filter_)
@@ -219,35 +226,22 @@ class TinyDBCatalogueProvider(BaseProvider):
             query['_source']['includes'].append('type')
             query['_source']['includes'].append('geometry')
         try:
-            LOGGER.debug('querying Elasticsearch')
-            print('query: {}'.format(json.dumps(query, indent=4)))
-            LOGGER.debug('query: {}'.format(json.dumps(query, indent=4)))
-
-            LOGGER.debug('Setting ES paging zero-based')
-            if startindex > 0:
-                startindex2 = startindex - 1
-            else:
-                startindex2 = startindex
-
-            results = self.es.search(index=self.index_name,
-                                     from_=startindex2, size=limit,
-                                     body=query)
-            results['hits']['total'] = results['hits']['total']['value']
-
+            LOGGER.debug('querying tinydb')
+            #reg = ''
+            #for k in q.split(' '):
+            Record = Query()     
+            results = self.db.all() #search(Record['_anytext'].matches(q, flags=re.IGNORECASE))
         except Exception as err:
             LOGGER.error(err)
             raise ProviderQueryError()
 
-        feature_collection['numberMatched'] = results['hits']['total']
+        feature_collection['numberMatched'] = len(results)
 
-        if resulttype == 'hits':
-            return feature_collection
-
-        feature_collection['numberReturned'] = len(results['hits']['hits'])
+        feature_collection['numberReturned'] = len(results)
 
         LOGGER.debug('serializing features')
-        for feature in results['hits']['hits']:
-            feature_ = self.esdoc2geojson(feature)
+        for row in results:
+            feature_ = self.record2geojson(row)
             feature_collection['features'].append(feature_)
 
         return feature_collection
@@ -264,14 +258,42 @@ class TinyDBCatalogueProvider(BaseProvider):
         LOGGER.debug('Fetching identifier {}'.format(identifier))
 
         Record = Query()
-        record = self.db.get(Record.identfier == identifier)
-        if len(record) < 1:
-            raise ProviderItemNotFoundError('record does not exist')
+        record = self.db.get(Record.id == identifier)
+        if record is not None and len(record) < 1:
+            raise ProviderItemNotFoundError('record '+identifier+' does not exist')
 
-        return record
+        return self.record2geojson(record)
 
     def insert(self, record):
         self.db.insert(record)
+
+    def record2geojson(self, rec):
+        """
+        generate GeoJSON `dict` from ES document
+
+        :param doc: `dict` of ES document
+
+        :returns: GeoJSON `dict`
+        """
+
+        feature = {'type': 'Feature'}
+        feature['id'] = rec[self.id_field]
+        if self.geometry['x_field'] is not None and self.geometry['y_field'] is not None:
+            feature['geometry'] = {
+                'type': 'Point',
+                'coordinates': [
+                    float(rec[self.geometry['x_field']]),
+                    float(rec[self.geometry['y_field']])
+                ]
+            }
+        else:
+            feature['geometry'] = None
+        feature['properties'] = {}
+        for k,v in rec.items():
+            if k not in [self.id_field,self.geometry['x_field'],self.geometry['y_field'],self.source_field,self.source_schema_field]:
+                feature['properties'][k] = v
+
+        return feature
 
     def __repr__(self):
         return '<TinyDBCatalogueProvider> {}'.format(self.data)

@@ -32,7 +32,8 @@ import logging
 
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderConnectionError
-from pygeoapi.util import yaml_load
+from pygeoapi.util import (yaml_load, filter_dict_by_key_value, 
+                           get_provider_by_type, get_provider_default)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ def catalogue_to_record(config):
             }
         },
         'links': [],
-        'provider': config['metadata']['catalogue']['provider']
+        'providers': config['metadata']['catalogue']['providers']
     }
 
     return record
@@ -156,8 +157,9 @@ def generate_catalogue(ctx, config_file):
 
     LOGGER.debug('Loading provider')
     try:
-        p = load_plugin('provider',
-                        c['metadata']['catalogue']['provider'])
+        p = load_plugin('provider', get_provider_by_type(
+                            c['metadata']['catalogue']['providers'],
+                            'records'))
     except ProviderConnectionError as err:
         raise click.ClickException(err)
 
