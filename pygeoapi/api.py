@@ -81,7 +81,7 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            json_serial, render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
-                           CrsTransformSpec, transform_bbox)
+                           CrsTransformSpec, remove_url_auth, transform_bbox)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
@@ -642,6 +642,7 @@ class API:
         self.api_headers = get_api_rules(self.config).response_headers
         self.base_url = get_base_url(self.config)
         self.prefetcher = UrlPrefetcher()
+        self.publisher = None
 
         CHARSET[0] = config['server'].get('encoding', 'utf-8')
         if config['server'].get('gzip'):
@@ -680,6 +681,17 @@ class API:
         LOGGER.debug(f"Loading process manager {manager_def['name']}")
         self.manager = load_plugin('process_manager', manager_def)
         LOGGER.info('Process manager plugin loaded')
+
+        # TODO: add as decorator
+        if 'pubsub' in self.config:
+            publisher_def = {
+                'name': self.config['pubsub']['publisher']['name'],
+                'type': 'pubsub',
+                'data': self.config['pubsub']['broker']['url']
+            }
+            LOGGER.debug(f"Loading publisher {publisher_def['name']}")
+            self.publisher = load_plugin('pubsub', publisher_def)
+            LOGGER.info('Publisher plugin loaded')
 
     @gzip
     @pre_process
@@ -759,6 +771,20 @@ class API:
             'href': f"{self.base_url}/jobs"
         }]
 
+        if 'pubsub' in self.config:
+            LOGGER.debug('Adding AsyncAPI links')
+            fcm['links'].extend([{
+                'rel': 'service-desc',
+                'type': FORMAT_TYPES[F_JSON],
+                'title': 'AsyncAPI document in JSON',
+                'href': f"{self.base_url}/asyncapi?f={F_JSON}"
+            }, {
+                'rel': 'service-desc',
+                'type': FORMAT_TYPES[F_HTML],
+                'title': 'AsyncAPI document in HTML',
+                'href': f"{self.base_url}/asyncapi?f={F_HTML}"
+            }])
+
         headers = request.get_response_headers(**self.api_headers)
         if request.format == F_HTML:  # render
 
@@ -825,6 +851,41 @@ class API:
             return headers, HTTPStatus.OK, to_json(openapi, self.pretty_print)
         else:
             return headers, HTTPStatus.OK, openapi
+
+    @gzip
+    @pre_process
+    def asyncapi(self, request: Union[APIRequest, Any],
+                 asyncapi) -> Tuple[dict, int, str]:
+        """
+        Provide AsyncAPI document
+
+        :param request: A request object
+        :param asyncapi: dict of AsyncAPI definition
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        headers = request.get_response_headers(**self.api_headers)
+
+        if request.format == F_HTML:
+            template = 'asyncapi.html'
+            path = f'{self.base_url}/asyncapi'
+            data = {
+                'asyncapi-document-path': path
+            }
+            content = render_j2_template(self.tpl_config, template, data,
+                                         request.locale)
+            return headers, HTTPStatus.OK, content
+
+        headers['Content-Type'] = 'application/json'
+
+        if isinstance(asyncapi, dict):
+            return headers, HTTPStatus.OK, to_json(asyncapi, self.pretty_print)
+        else:
+            return headers, HTTPStatus.OK, asyncapi
 
     @gzip
     @pre_process
@@ -976,6 +1037,18 @@ class API:
 
                 if content_length > 0:
                     lnk['length'] = content_length
+
+                collection['links'].append(lnk)
+
+                if 'pubsub' in self.config:
+                    LOGGER.debug('Adding Pub/Sub link')
+                    lnk = {
+                        'type': FORMAT_TYPES[F_JSON],
+                        'rel': 'items',
+                        'title': 'Subscription information (Pub/Sub)',
+                        'href': f"{remove_url_auth(self.config['pubsub']['broker']['url'])}",  # noqa
+                        'channel': f'collections/{k}'
+                    }
 
                 collection['links'].append(lnk)
 
@@ -1230,6 +1303,16 @@ class API:
                 'rel': request.get_linkrel(F_HTML),
                 'title': 'This document as HTML',
                 'href': f'{self.get_collections_url()}?f={F_HTML}'
+            })
+
+        if 'pubsub' in self.config and dataset is None:
+            LOGGER.debug('Adding Pub/Sub link')
+            fcm['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': 'collection',
+                'title': 'Subscription information (Pub/Sub)',
+                'href': f"{remove_url_auth(self.config['pubsub']['broker']['url'])}",  # noqa
+                'channel': 'collections'
             })
 
         if request.format == F_HTML:  # render
@@ -2168,6 +2251,12 @@ class API:
                     'InvalidParameterValue', msg)
 
             headers['Location'] = f'{self.get_collections_url()}/{dataset}/items/{identifier}'  # noqa
+
+            if self.publisher is not None:
+                LOGGER.debug(f'Publishing feature to {self.publisher.broker_safe_url}')
+                topic = f'collections/{dataset}'
+                self.publisher.connect()
+                self.publisher.pub(topic, request.data)
 
             return headers, HTTPStatus.CREATED, ''
 

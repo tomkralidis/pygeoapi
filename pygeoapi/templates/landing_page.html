@@ -81,6 +81,12 @@
       <p>
         <a href="{{ config['server']['url'] }}/openapi?f=json">{% trans %}OpenAPI Document{% endtrans %}</a>
       </p>
+
+      {% if 'pubsub' in config %}
+      <p>
+        <a href="{{ config['server']['url'] }}/asyncapi">{% trans %}AsyncAPI Document{% endtrans %}</a>
+      </p>
+      {% endif %}
   </section>
   <section id="conformance">
       <h2>{% trans %}Conformance{% endtrans %}</h2>

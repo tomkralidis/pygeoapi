@@ -148,6 +148,22 @@ def openapi():
     return get_response(api_.openapi(request, openapi_))
 
 
+@BLUEPRINT.route('/asyncapi')
+def asyncapi():
+    """
+    AsyncAPI endpoint
+
+    :returns: HTTP response
+    """
+    with open(os.environ.get('PYGEOAPI_ASYNCAPI'), encoding='utf8') as ff:
+        if os.environ.get('PYGEOAPI_ASYNCAPI').endswith(('.yaml', '.yml')):
+            asyncapi_ = yaml_load(ff)
+        else:  # JSON string, do not transform
+            asyncapi_ = ff.read()
+
+    return get_response(api_.asyncapi(request, asyncapi_))
+
+
 @BLUEPRINT.route('/conformance')
 def conformance():
     """

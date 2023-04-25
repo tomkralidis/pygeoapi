@@ -1,0 +1,3553 @@
+components:
+  parameters:
+    bbox:
+      description: Only features that have a geometry that intersects the bounding
+        box are selected.The bounding box is provided as four or six numbers, depending
+        on whether the coordinate reference system includes a vertical axis (height
+        or depth).
+      explode: false
+      in: query
+      name: bbox
+      required: false
+      schema:
+        items:
+          type: number
+        maxItems: 6
+        minItems: 4
+        type: array
+      style: form
+    bbox-crs:
+      description: Indicates the coordinate reference system for the given bbox coordinates.
+      explode: false
+      in: query
+      name: bbox-crs
+      required: false
+      schema:
+        format: uri
+        type: string
+      style: form
+    bbox-crs-epsg:
+      description: Indicates the EPSG for the given bbox coordinates.
+      explode: false
+      in: query
+      name: bbox-crs
+      required: false
+      schema:
+        default: 4326
+        type: integer
+      style: form
+    crs:
+      description: Indicates the coordinate reference system for the results.
+      explode: false
+      in: query
+      name: crs
+      required: false
+      schema:
+        format: uri
+        type: string
+      style: form
+    f:
+      description: The optional f parameter indicates the output format which the
+        server shall provide as part of the response document.  The default format
+        is GeoJSON.
+      explode: false
+      in: query
+      name: f
+      required: false
+      schema:
+        default: json
+        enum:
+        - json
+        - html
+        - jsonld
+        type: string
+      style: form
+    lang:
+      description: The optional lang parameter instructs the server return a response
+        in a certain language, if supported.  If the language is not among the available
+        values, the Accept-Language header language will be used if it is supported.
+        If the header is missing, the default server language is used. Note that providers
+        may only support a single language (or often no language at all), that can
+        be different from the server language.  Language strings can be written in
+        a complex (e.g. "fr-CA,fr;q=0.9,en-US;q=0.8,en;q=0.7"), simple (e.g. "de")
+        or locale-like (e.g. "de-CH" or "fr_BE") fashion.
+      in: query
+      name: lang
+      required: false
+      schema:
+        default: en-US
+        enum:
+        - en-US
+        - fr-CA
+        type: string
+    offset:
+      description: The optional offset parameter indicates the index within the result
+        set from which the server shall begin presenting results in the response document.  The
+        first element has an index of 0 (default).
+      explode: false
+      in: query
+      name: offset
+      required: false
+      schema:
+        default: 0
+        minimum: 0
+        type: integer
+      style: form
+    properties:
+      description: The properties that should be included for each feature. The parameter
+        value is a comma-separated list of property names.
+      explode: false
+      in: query
+      name: properties
+      required: false
+      schema:
+        items:
+          type: string
+        type: array
+      style: form
+    skipGeometry:
+      description: This option can be used to skip response geometries for each feature.
+      explode: false
+      in: query
+      name: skipGeometry
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
+    vendorSpecificParameters:
+      description: Additional "free-form" parameters that are not explicitly defined
+      in: query
+      name: vendorSpecificParameters
+      schema:
+        additionalProperties: true
+        type: object
+      style: form
+  responses:
+    '200':
+      description: successful operation
+    Queryables:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/queryables'
+      description: successful queryables operation
+    default:
+      content:
+        application/json:
+          schema:
+            $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/exception.yaml
+      description: Unexpected error
+  schemas:
+    queryable:
+      properties:
+        description:
+          description: a human-readable narrative describing the queryable
+          type: string
+        language:
+          default:
+          - en
+          description: the language used for the title and description
+          type: string
+        queryable:
+          description: the token that may be used in a CQL predicate
+          type: string
+        title:
+          description: a human readable title for the queryable
+          type: string
+        type:
+          description: the data type of the queryable
+          type: string
+        type-ref:
+          description: a reference to the formal definition of the type
+          format: url
+          type: string
+      required:
+      - queryable
+      - type
+      type: object
+    queryables:
+      properties:
+        queryables:
+          items:
+            $ref: '#/components/schemas/queryable'
+          type: array
+      required:
+      - queryables
+      type: object
+info:
+  contact:
+    email: you@example.org
+    name: Organization Name
+    url: https://pygeoapi.io
+  description: pygeoapi OGC API - Pub/Sub demonstration
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  termsOfService: https://creativecommons.org/licenses/by/4.0/
+  title: pygeoapi OGC API - Pub/Sub demonstration
+  version: 0.15.dev0
+  x-keywords:
+  - geospatial
+  - data
+  - api
+openapi: 3.0.2
+paths:
+  /:
+    get:
+      description: Landing page
+      operationId: getLandingPage
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Landing page
+      tags:
+      - server
+  /collections:
+    get:
+      description: Collections
+      operationId: getCollections
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Collections
+      tags:
+      - server
+  /collections/canada-metadata:
+    get:
+      description: Sample metadata records from open.canada.ca
+      operationId: describeCanada-metadataCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Open Canada sample data metadata
+      tags:
+      - canada-metadata
+  /collections/canada-metadata/items:
+    get:
+      description: Sample metadata records from open.canada.ca
+      operationId: getCanada-metadataFeatures
+      parameters:
+      - &id001
+        description: The optional f parameter indicates the output format which the
+          server shall provide as part of the response document.  The default format
+          is GeoJSON.
+        explode: false
+        in: query
+        name: f
+        required: false
+        schema:
+          default: json
+          enum:
+          - json
+          - html
+          - jsonld
+          - csv
+          type: string
+        style: form
+      - &id002
+        description: The optional lang parameter instructs the server return a response
+          in a certain language, if supported.  If the language is not among the available
+          values, the Accept-Language header language will be used if it is supported.
+          If the header is missing, the default server language is used. Note that
+          providers may only support a single language (or often no language at all),
+          that can be different from the server language.  Language strings can be
+          written in a complex (e.g. "fr-CA,fr;q=0.9,en-US;q=0.8,en;q=0.7"), simple
+          (e.g. "de") or locale-like (e.g. "de-CH" or "fr_BE") fashion.
+        in: query
+        name: lang
+        required: false
+        schema:
+          default: en-US
+          enum:
+          - en-US
+          - fr-CA
+          type: string
+      - $ref: '#/components/parameters/bbox'
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/bbox-crs'
+      - description: The properties that should be included for each feature. The
+          parameter value is a comma-separated list of property names.
+        explode: false
+        in: query
+        name: properties
+        required: false
+        schema:
+          items:
+            enum:
+            - created
+            - updated
+            - type
+            - title
+            - description
+            - providers
+            - externalIds
+            - themes
+            - q
+            type: string
+          type: array
+        style: form
+      - $ref: '#/components/parameters/vendorSpecificParameters'
+      - $ref: '#/components/parameters/skipGeometry'
+      - $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi/parameters/sortby.yaml
+      - $ref: '#/components/parameters/offset'
+      - $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi/parameters/q.yaml
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/datetime
+      - explode: false
+        in: query
+        name: created
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: updated
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: type
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: title
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: description
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: providers
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: externalIds
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: themes
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Open Canada sample data items
+      tags:
+      - canada-metadata
+  /collections/canada-metadata/items/{featureId}:
+    get:
+      description: Sample metadata records from open.canada.ca
+      operationId: getCanada-metadataFeature
+      parameters:
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Open Canada sample data item by id
+      tags:
+      - canada-metadata
+  /collections/canada-metadata/queryables:
+    get:
+      description: Sample metadata records from open.canada.ca
+      operationId: getCanada-metadataQueryables
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/Queryables'
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Open Canada sample data queryables
+      tags:
+      - canada-metadata
+  /collections/canada-surface-weather-obs:
+    get:
+      description: Canada surface weather observations
+      operationId: describeCanada-surface-weather-obsCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Canada surface weather observations metadata
+      tags:
+      - canada-surface-weather-obs
+  /collections/canada-surface-weather-obs/items:
+    get:
+      description: Canada surface weather observations
+      operationId: getCanada-surface-weather-obsFeatures
+      parameters:
+      - *id001
+      - *id002
+      - $ref: '#/components/parameters/bbox'
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/bbox-crs'
+      - description: The properties that should be included for each feature. The
+          parameter value is a comma-separated list of property names.
+        explode: false
+        in: query
+        name: properties
+        required: false
+        schema:
+          items:
+            enum:
+            - _is-minutely_obs-value
+            - air_temp
+            - air_temp-qa
+            - air_temp-uom
+            - air_temp_1
+            - air_temp_1-uom
+            - air_temp_2
+            - air_temp_2-uom
+            - air_temp_3
+            - air_temp_3-uom
+            - avg_air_temp_pst1hr
+            - avg_air_temp_pst1hr-data_flag-code_src
+            - avg_air_temp_pst1hr-data_flag-uom
+            - avg_air_temp_pst1hr-data_flag-value
+            - avg_air_temp_pst1hr-uom
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts-qa
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts-uom
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts_1
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts_1-uom
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts_2
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts_2-uom
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts_3
+            - avg_cum_pcpn_gag_wt_fltrd_pst5mts_3-uom
+            - avg_dwpt_temp_pst1hr
+            - avg_dwpt_temp_pst1hr-data_flag-code_src
+            - avg_dwpt_temp_pst1hr-data_flag-uom
+            - avg_dwpt_temp_pst1hr-data_flag-value
+            - avg_dwpt_temp_pst1hr-uom
+            - avg_globl_solr_radn_pst1hr
+            - avg_globl_solr_radn_pst1hr-data_flag-code_src
+            - avg_globl_solr_radn_pst1hr-data_flag-uom
+            - avg_globl_solr_radn_pst1hr-data_flag-value
+            - avg_globl_solr_radn_pst1hr-uom
+            - avg_globl_solr_radn_pst1mt
+            - avg_globl_solr_radn_pst1mt-data_flag-code_src
+            - avg_globl_solr_radn_pst1mt-data_flag-uom
+            - avg_globl_solr_radn_pst1mt-data_flag-value
+            - avg_globl_solr_radn_pst1mt-uom
+            - avg_rel_hum_pst1hr
+            - avg_rel_hum_pst1hr-data_flag-code_src
+            - avg_rel_hum_pst1hr-data_flag-uom
+            - avg_rel_hum_pst1hr-data_flag-value
+            - avg_rel_hum_pst1hr-uom
+            - avg_snw_dpth_pst5mts
+            - avg_snw_dpth_pst5mts-qa
+            - avg_snw_dpth_pst5mts-uom
+            - avg_snw_dpth_pst5mts_1
+            - avg_snw_dpth_pst5mts_1-uom
+            - avg_snw_dpth_pst5mts_2
+            - avg_snw_dpth_pst5mts_2-uom
+            - avg_snw_dpth_pst5mts_3
+            - avg_snw_dpth_pst5mts_3-uom
+            - avg_wnd_dir_10m_pst10mts
+            - avg_wnd_dir_10m_pst10mts-data_flag-code_src
+            - avg_wnd_dir_10m_pst10mts-data_flag-uom
+            - avg_wnd_dir_10m_pst10mts-data_flag-value
+            - avg_wnd_dir_10m_pst10mts-uom
+            - avg_wnd_dir_10m_pst1hr
+            - avg_wnd_dir_10m_pst1hr-data_flag-code_src
+            - avg_wnd_dir_10m_pst1hr-data_flag-uom
+            - avg_wnd_dir_10m_pst1hr-data_flag-value
+            - avg_wnd_dir_10m_pst1hr-uom
+            - avg_wnd_dir_10m_pst1mt
+            - avg_wnd_dir_10m_pst1mt-qa
+            - avg_wnd_dir_10m_pst1mt-uom
+            - avg_wnd_dir_10m_pst2mts
+            - avg_wnd_dir_10m_pst2mts-data_flag-code_src
+            - avg_wnd_dir_10m_pst2mts-data_flag-uom
+            - avg_wnd_dir_10m_pst2mts-data_flag-value
+            - avg_wnd_dir_10m_pst2mts-uom
+            - avg_wnd_spd_10m_pst10mts
+            - avg_wnd_spd_10m_pst10mts-data_flag-code_src
+            - avg_wnd_spd_10m_pst10mts-data_flag-uom
+            - avg_wnd_spd_10m_pst10mts-data_flag-value
+            - avg_wnd_spd_10m_pst10mts-uom
+            - avg_wnd_spd_10m_pst1hr
+            - avg_wnd_spd_10m_pst1hr-data_flag-code_src
+            - avg_wnd_spd_10m_pst1hr-data_flag-uom
+            - avg_wnd_spd_10m_pst1hr-data_flag-value
+            - avg_wnd_spd_10m_pst1hr-uom
+            - avg_wnd_spd_10m_pst1mt
+            - avg_wnd_spd_10m_pst1mt-qa
+            - avg_wnd_spd_10m_pst1mt-uom
+            - avg_wnd_spd_10m_pst2mts
+            - avg_wnd_spd_10m_pst2mts-data_flag-code_src
+            - avg_wnd_spd_10m_pst2mts-data_flag-uom
+            - avg_wnd_spd_10m_pst2mts-data_flag-value
+            - avg_wnd_spd_10m_pst2mts-uom
+            - avg_wnd_spd_pcpn_gag_pst10mts
+            - avg_wnd_spd_pcpn_gag_pst10mts-data_flag-code_src
+            - avg_wnd_spd_pcpn_gag_pst10mts-data_flag-uom
+            - avg_wnd_spd_pcpn_gag_pst10mts-data_flag-value
+            - avg_wnd_spd_pcpn_gag_pst10mts-uom
+            - avg_wnd_spd_pcpn_gag_pst1mt
+            - avg_wnd_spd_pcpn_gag_pst1mt-qa
+            - avg_wnd_spd_pcpn_gag_pst1mt-uom
+            - clim_id-uom
+            - clim_id-value
+            - data_avail_pst1hr
+            - data_avail_pst1hr-data_flag-code_src
+            - data_avail_pst1hr-data_flag-uom
+            - data_avail_pst1hr-data_flag-value
+            - data_avail_pst1hr-uom
+            - data_avail_pst1mt
+            - data_avail_pst1mt-qa
+            - data_avail_pst1mt-uom
+            - data_pvdr-uom
+            - data_pvdr-value
+            - dataset
+            - date_tm-uom
+            - date_tm-value
+            - dwpt_temp
+            - dwpt_temp-data_flag-code_src
+            - dwpt_temp-data_flag-uom
+            - dwpt_temp-data_flag-value
+            - dwpt_temp-uom
+            - id
+            - logr_panl_temp
+            - logr_panl_temp-qa
+            - logr_panl_temp-uom
+            - max_air_temp_pst1hr
+            - max_air_temp_pst1hr-data_flag-code_src
+            - max_air_temp_pst1hr-data_flag-uom
+            - max_air_temp_pst1hr-data_flag-value
+            - max_air_temp_pst1hr-uom
+            - max_batry_volt_pst1hr
+            - max_batry_volt_pst1hr-data_flag-code_src
+            - max_batry_volt_pst1hr-data_flag-uom
+            - max_batry_volt_pst1hr-data_flag-value
+            - max_batry_volt_pst1hr-uom
+            - max_batry_volt_pst1mt
+            - max_batry_volt_pst1mt-qa
+            - max_batry_volt_pst1mt-uom
+            - max_rel_hum_pst1hr
+            - max_rel_hum_pst1hr-data_flag-code_src
+            - max_rel_hum_pst1hr-data_flag-uom
+            - max_rel_hum_pst1hr-data_flag-value
+            - max_rel_hum_pst1hr-uom
+            - max_rel_hum_pst1mt
+            - max_rel_hum_pst1mt-qa
+            - max_rel_hum_pst1mt-uom
+            - max_wnd_spd_10m_pst10mts
+            - max_wnd_spd_10m_pst10mts-data_flag-code_src
+            - max_wnd_spd_10m_pst10mts-data_flag-uom
+            - max_wnd_spd_10m_pst10mts-data_flag-value
+            - max_wnd_spd_10m_pst10mts-uom
+            - max_wnd_spd_10m_pst1hr
+            - max_wnd_spd_10m_pst1hr-data_flag-code_src
+            - max_wnd_spd_10m_pst1hr-data_flag-uom
+            - max_wnd_spd_10m_pst1hr-data_flag-value
+            - max_wnd_spd_10m_pst1hr-uom
+            - max_wnd_spd_10m_pst1mt
+            - max_wnd_spd_10m_pst1mt-qa
+            - max_wnd_spd_10m_pst1mt-uom
+            - max_wnd_spd_pst1hr_tm
+            - max_wnd_spd_pst1hr_tm-data_flag-code_src
+            - max_wnd_spd_pst1hr_tm-data_flag-uom
+            - max_wnd_spd_pst1hr_tm-data_flag-value
+            - max_wnd_spd_pst1hr_tm-uom
+            - min_air_temp_pst1hr
+            - min_air_temp_pst1hr-data_flag-code_src
+            - min_air_temp_pst1hr-data_flag-uom
+            - min_air_temp_pst1hr-data_flag-value
+            - min_air_temp_pst1hr-uom
+            - min_batry_volt_pst1hr
+            - min_batry_volt_pst1hr-data_flag-code_src
+            - min_batry_volt_pst1hr-data_flag-uom
+            - min_batry_volt_pst1hr-data_flag-value
+            - min_batry_volt_pst1hr-uom
+            - min_batry_volt_pst1mt
+            - min_batry_volt_pst1mt-qa
+            - min_batry_volt_pst1mt-uom
+            - min_rel_hum_pst1hr
+            - min_rel_hum_pst1hr-data_flag-code_src
+            - min_rel_hum_pst1hr-data_flag-uom
+            - min_rel_hum_pst1hr-data_flag-value
+            - min_rel_hum_pst1hr-uom
+            - min_rel_hum_pst1mt
+            - min_rel_hum_pst1mt-qa
+            - min_rel_hum_pst1mt-uom
+            - msc_id-uom
+            - msc_id-value
+            - obs_date_tm
+            - pcpn_amt_pst10mts
+            - pcpn_amt_pst10mts-data_flag-code_src
+            - pcpn_amt_pst10mts-data_flag-uom
+            - pcpn_amt_pst10mts-data_flag-value
+            - pcpn_amt_pst10mts-uom
+            - pcpn_amt_pst1hr
+            - pcpn_amt_pst1hr-data_flag-code_src
+            - pcpn_amt_pst1hr-data_flag-uom
+            - pcpn_amt_pst1hr-data_flag-value
+            - pcpn_amt_pst1hr-uom
+            - pcpn_amt_snc_top_of_hr
+            - pcpn_amt_snc_top_of_hr-data_flag-code_src
+            - pcpn_amt_snc_top_of_hr-data_flag-uom
+            - pcpn_amt_snc_top_of_hr-data_flag-value
+            - pcpn_amt_snc_top_of_hr-uom
+            - processed_date_tm
+            - rel_hum
+            - rel_hum-qa
+            - rel_hum-uom
+            - rnfl_amt_pst1hr
+            - rnfl_amt_pst1hr-data_flag-code_src
+            - rnfl_amt_pst1hr-data_flag-uom
+            - rnfl_amt_pst1hr-data_flag-value
+            - rnfl_amt_pst1hr-uom
+            - rnfl_amt_pst1mt
+            - rnfl_amt_pst1mt-qa
+            - rnfl_amt_pst1mt-uom
+            - snw_dpth
+            - snw_dpth-qa
+            - snw_dpth-uom
+            - snw_dpth_1
+            - snw_dpth_1-uom
+            - snw_dpth_2
+            - snw_dpth_2-uom
+            - snw_dpth_3
+            - snw_dpth_3-uom
+            - stn_nam-uom
+            - stn_nam-value
+            - stn_pres
+            - stn_pres-qa
+            - stn_pres-uom
+            - tc_id-uom
+            - tc_id-value
+            - tot_globl_solr_radn_pst1hr
+            - tot_globl_solr_radn_pst1hr-data_flag-code_src
+            - tot_globl_solr_radn_pst1hr-data_flag-uom
+            - tot_globl_solr_radn_pst1hr-data_flag-value
+            - tot_globl_solr_radn_pst1hr-uom
+            - tot_globl_solr_radn_pst1mt
+            - tot_globl_solr_radn_pst1mt-qa
+            - tot_globl_solr_radn_pst1mt-uom
+            - url
+            - wetblb_temp
+            - wetblb_temp-data_flag-code_src
+            - wetblb_temp-data_flag-uom
+            - wetblb_temp-data_flag-value
+            - wetblb_temp-uom
+            - wmo_synop_id-uom
+            - wmo_synop_id-value
+            - wnd_dir_10m_pst10mts_max_spd
+            - wnd_dir_10m_pst10mts_max_spd-data_flag-code_src
+            - wnd_dir_10m_pst10mts_max_spd-data_flag-uom
+            - wnd_dir_10m_pst10mts_max_spd-data_flag-value
+            - wnd_dir_10m_pst10mts_max_spd-uom
+            - wnd_dir_10m_pst1hr_max_spd
+            - wnd_dir_10m_pst1hr_max_spd-data_flag-code_src
+            - wnd_dir_10m_pst1hr_max_spd-data_flag-uom
+            - wnd_dir_10m_pst1hr_max_spd-data_flag-value
+            - wnd_dir_10m_pst1hr_max_spd-uom
+            - wnd_dir_10m_pst1mt_max_spd
+            - wnd_dir_10m_pst1mt_max_spd-qa
+            - wnd_dir_10m_pst1mt_max_spd-uom
+            type: string
+          type: array
+        style: form
+      - $ref: '#/components/parameters/vendorSpecificParameters'
+      - $ref: '#/components/parameters/skipGeometry'
+      - $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi/parameters/sortby.yaml
+      - $ref: '#/components/parameters/offset'
+      - explode: false
+        in: query
+        name: _is-minutely_obs-value
+        required: false
+        schema:
+          type: boolean
+        style: form
+      - explode: false
+        in: query
+        name: air_temp
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: air_temp-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: air_temp-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: air_temp_1
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: air_temp_1-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: air_temp_2
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: air_temp_2-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: air_temp_3
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: air_temp_3-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_air_temp_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_air_temp_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_air_temp_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_air_temp_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_air_temp_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts_1
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts_1-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts_2
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts_2-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts_3
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_cum_pcpn_gag_wt_fltrd_pst5mts_3-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_dwpt_temp_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_dwpt_temp_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_dwpt_temp_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_dwpt_temp_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_dwpt_temp_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1hr
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1mt
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1mt-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1mt-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1mt-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_globl_solr_radn_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_rel_hum_pst1hr
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_rel_hum_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_rel_hum_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_rel_hum_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_rel_hum_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts_1
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts_1-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts_2
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts_2-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts_3
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_snw_dpth_pst5mts_3-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst10mts
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst10mts-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst10mts-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst10mts-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst10mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst1hr
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst1mt
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst2mts
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst2mts-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst2mts-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst2mts-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_dir_10m_pst2mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst10mts
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst10mts-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst10mts-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst10mts-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst10mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst1mt
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst2mts
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst2mts-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst2mts-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst2mts-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_10m_pst2mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_pcpn_gag_pst10mts
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_pcpn_gag_pst10mts-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_pcpn_gag_pst10mts-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_pcpn_gag_pst10mts-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_pcpn_gag_pst10mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_pcpn_gag_pst1mt
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_pcpn_gag_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: avg_wnd_spd_pcpn_gag_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: clim_id-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: clim_id-value
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: data_avail_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: data_avail_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: data_avail_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: data_avail_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: data_avail_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: data_avail_pst1mt
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: data_avail_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: data_avail_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: data_pvdr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: data_pvdr-value
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: dataset
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: date_tm-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: date_tm-value
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: dwpt_temp
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: dwpt_temp-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: dwpt_temp-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: dwpt_temp-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: dwpt_temp-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: id
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: logr_panl_temp
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: logr_panl_temp-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: logr_panl_temp-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_air_temp_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_air_temp_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_air_temp_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_air_temp_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_air_temp_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_batry_volt_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_batry_volt_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_batry_volt_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_batry_volt_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_batry_volt_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_batry_volt_pst1mt
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_batry_volt_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_batry_volt_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_rel_hum_pst1hr
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_rel_hum_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_rel_hum_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_rel_hum_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_rel_hum_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_rel_hum_pst1mt
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_rel_hum_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_rel_hum_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst10mts
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst10mts-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst10mts-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst10mts-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst10mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst1mt
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_10m_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_pst1hr_tm
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_pst1hr_tm-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_pst1hr_tm-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_pst1hr_tm-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: max_wnd_spd_pst1hr_tm-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_air_temp_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_air_temp_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_air_temp_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_air_temp_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_air_temp_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_batry_volt_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_batry_volt_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_batry_volt_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_batry_volt_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_batry_volt_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_batry_volt_pst1mt
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_batry_volt_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_batry_volt_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_rel_hum_pst1hr
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_rel_hum_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_rel_hum_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_rel_hum_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_rel_hum_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: min_rel_hum_pst1mt
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_rel_hum_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: min_rel_hum_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: msc_id-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: msc_id-value
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: obs_date_tm
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst10mts
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst10mts-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst10mts-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst10mts-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst10mts-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst1hr
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_snc_top_of_hr
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_snc_top_of_hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_snc_top_of_hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_snc_top_of_hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: pcpn_amt_snc_top_of_hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: processed_date_tm
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: rel_hum
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: rel_hum-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: rel_hum-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: rnfl_amt_pst1hr
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: rnfl_amt_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: rnfl_amt_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: rnfl_amt_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: rnfl_amt_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: rnfl_amt_pst1mt
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: rnfl_amt_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: rnfl_amt_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth_1
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth_1-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth_2
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth_2-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth_3
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: snw_dpth_3-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: stn_nam-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: stn_nam-value
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: stn_pres
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: stn_pres-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: stn_pres-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: tc_id-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: tc_id-value
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: tot_globl_solr_radn_pst1hr
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: tot_globl_solr_radn_pst1hr-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: tot_globl_solr_radn_pst1hr-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: tot_globl_solr_radn_pst1hr-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: tot_globl_solr_radn_pst1hr-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: tot_globl_solr_radn_pst1mt
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: tot_globl_solr_radn_pst1mt-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: tot_globl_solr_radn_pst1mt-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: url
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wetblb_temp
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: wetblb_temp-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wetblb_temp-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wetblb_temp-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: wetblb_temp-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wmo_synop_id-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wmo_synop_id-value
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst10mts_max_spd
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst10mts_max_spd-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst10mts_max_spd-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst10mts_max_spd-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst10mts_max_spd-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst1hr_max_spd
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst1hr_max_spd-data_flag-code_src
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst1hr_max_spd-data_flag-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst1hr_max_spd-data_flag-value
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst1hr_max_spd-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst1mt_max_spd
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst1mt_max_spd-qa
+        required: false
+        schema:
+          format: long
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: wnd_dir_10m_pst1mt_max_spd-uom
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Canada surface weather observations items
+      tags:
+      - canada-surface-weather-obs
+    post:
+      description: Canada surface weather observations
+      operationId: addCanada-surface-weather-obsFeatures
+      requestBody:
+        content:
+          application/geo+json:
+            schema: {}
+        description: Adds item to collection
+        required: true
+      responses:
+        '201':
+          description: Successful creation
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Add Canada surface weather observations items
+      tags:
+      - canada-surface-weather-obs
+  /collections/canada-surface-weather-obs/items/{featureId}:
+    delete:
+      description: Canada surface weather observations
+      operationId: deleteCanada-surface-weather-obsFeatures
+      parameters:
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      responses:
+        '200':
+          description: Successful delete
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Delete Canada surface weather observations items
+      tags:
+      - canada-surface-weather-obs
+    get:
+      description: Canada surface weather observations
+      operationId: getCanada-surface-weather-obsFeature
+      parameters:
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Canada surface weather observations item by id
+      tags:
+      - canada-surface-weather-obs
+    put:
+      description: Canada surface weather observations
+      operationId: updateCanada-surface-weather-obsFeatures
+      parameters:
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      requestBody:
+        content:
+          application/geo+json:
+            schema: {}
+        description: Updates item in collection
+        required: true
+      responses:
+        '204':
+          description: Successful update
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Update Canada surface weather observations items
+      tags:
+      - canada-surface-weather-obs
+  /collections/canada-surface-weather-obs/queryables:
+    get:
+      description: Canada surface weather observations
+      operationId: getCanada-surface-weather-obsQueryables
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/Queryables'
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Canada surface weather observations queryables
+      tags:
+      - canada-surface-weather-obs
+  /collections/erddap-demo:
+    get:
+      description: ERDDAP demo
+      operationId: describeErddap-demoCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get ERDDAP demo metadata
+      tags:
+      - erddap-demo
+  /collections/erddap-demo/items:
+    get:
+      description: ERDDAP demo
+      operationId: getErddap-demoFeatures
+      parameters:
+      - *id001
+      - *id002
+      - $ref: '#/components/parameters/bbox'
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/bbox-crs'
+      - description: The properties that should be included for each feature. The
+          parameter value is a comma-separated list of property names.
+        explode: false
+        in: query
+        name: properties
+        required: false
+        schema:
+          items:
+            enum:
+            - PLATFORM_CODE
+            - time
+            - platform
+            - parameter
+            - OBSERVATION_VALUE
+            - OBSERVATION_DEPTH
+            - COUNTRY_NAME
+            - organization_name
+            type: string
+          type: array
+        style: form
+      - $ref: '#/components/parameters/vendorSpecificParameters'
+      - $ref: '#/components/parameters/skipGeometry'
+      - $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi/parameters/sortby.yaml
+      - $ref: '#/components/parameters/offset'
+      - explode: false
+        in: query
+        name: PLATFORM_CODE
+        required: false
+        schema:
+          type: str
+        style: form
+      - explode: false
+        in: query
+        name: time
+        required: false
+        schema:
+          type: str
+        style: form
+      - explode: false
+        in: query
+        name: platform
+        required: false
+        schema:
+          type: str
+        style: form
+      - explode: false
+        in: query
+        name: parameter
+        required: false
+        schema:
+          type: str
+        style: form
+      - explode: false
+        in: query
+        name: OBSERVATION_VALUE
+        required: false
+        schema:
+          type: float
+        style: form
+      - explode: false
+        in: query
+        name: OBSERVATION_DEPTH
+        required: false
+        schema:
+          type: float
+        style: form
+      - explode: false
+        in: query
+        name: COUNTRY_NAME
+        required: false
+        schema:
+          type: str
+        style: form
+      - explode: false
+        in: query
+        name: organization_name
+        required: false
+        schema:
+          type: str
+        style: form
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get ERDDAP demo items
+      tags:
+      - erddap-demo
+  /collections/erddap-demo/items/{featureId}:
+    get:
+      description: ERDDAP demo
+      operationId: getErddap-demoFeature
+      parameters:
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get ERDDAP demo item by id
+      tags:
+      - erddap-demo
+  /collections/erddap-demo/queryables:
+    get:
+      description: ERDDAP demo
+      operationId: getErddap-demoQueryables
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/Queryables'
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get ERDDAP demo queryables
+      tags:
+      - erddap-demo
+  /collections/gdps-temperature:
+    get:
+      description: Global Deterministic Prediction System sample
+      operationId: describeGdps-temperatureCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Global Deterministic Prediction System sample metadata
+      tags:
+      - gdps-temperature
+  /collections/gdps-temperature/coverage:
+    get:
+      description: Global Deterministic Prediction System sample
+      operationId: getGdps-temperatureCoverage
+      parameters:
+      - *id001
+      - *id002
+      - $ref: '#/components/parameters/bbox'
+      - $ref: '#/components/parameters/bbox-crs'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Global Deterministic Prediction System sample coverage
+      tags:
+      - gdps-temperature
+  /collections/gdps-temperature/coverage/domainset:
+    get:
+      description: Global Deterministic Prediction System sample
+      operationId: getGdps-temperatureCoverageDomainSet
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          $ref: https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved/schemas/cis_1.1/domainSet.yaml
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Global Deterministic Prediction System sample coverage domain set
+      tags:
+      - gdps-temperature
+  /collections/gdps-temperature/coverage/rangetype:
+    get:
+      description: Global Deterministic Prediction System sample
+      operationId: getGdps-temperatureCoverageRangeType
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          $ref: https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved/schemas/cis_1.1/rangeType.yaml
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Global Deterministic Prediction System sample coverage range type
+      tags:
+      - gdps-temperature
+  /collections/lakes:
+    get:
+      description: lakes of the world, public domain
+      operationId: describeLakesCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Large Lakes metadata
+      tags:
+      - lakes
+  /collections/lakes/items:
+    get:
+      description: lakes of the world, public domain
+      operationId: getLakesFeatures
+      parameters:
+      - *id001
+      - *id002
+      - $ref: '#/components/parameters/bbox'
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/bbox-crs'
+      - description: The properties that should be included for each feature. The
+          parameter value is a comma-separated list of property names.
+        explode: false
+        in: query
+        name: properties
+        required: false
+        schema:
+          items:
+            enum:
+            - id
+            - scalerank
+            - name
+            - name_alt
+            - admin
+            - featureclass
+            type: string
+          type: array
+        style: form
+      - $ref: '#/components/parameters/vendorSpecificParameters'
+      - $ref: '#/components/parameters/skipGeometry'
+      - $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi/parameters/sortby.yaml
+      - $ref: '#/components/parameters/offset'
+      - explode: false
+        in: query
+        name: id
+        required: false
+        schema:
+          type: integer
+        style: form
+      - explode: false
+        in: query
+        name: scalerank
+        required: false
+        schema:
+          type: integer
+        style: form
+      - explode: false
+        in: query
+        name: name
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: name_alt
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: admin
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: featureclass
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Large Lakes items
+      tags:
+      - lakes
+  /collections/lakes/items/{featureId}:
+    get:
+      description: lakes of the world, public domain
+      operationId: getLakesFeature
+      parameters:
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Large Lakes item by id
+      tags:
+      - lakes
+  /collections/lakes/queryables:
+    get:
+      description: lakes of the world, public domain
+      operationId: getLakesQueryables
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/Queryables'
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Large Lakes queryables
+      tags:
+      - lakes
+  /collections/mapserver_world_map:
+    get:
+      description: MapServer demo WMS world map
+      operationId: describeMapserver_world_mapCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get MapServer demo WMS world map metadata
+      tags:
+      - mapserver_world_map
+  /collections/mapserver_world_map/map:
+    get:
+      description: MapServer demo WMS world map map
+      operationId: getMap
+      parameters:
+      - $ref: '#/components/parameters/bbox'
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/datetime
+      - description: Response image width
+        explode: false
+        in: query
+        name: width
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Response image height
+        explode: false
+        in: query
+        name: height
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Background transparency of map (default=true).
+        explode: false
+        in: query
+        name: transparent
+        required: false
+        schema:
+          default: true
+          type: boolean
+        style: form
+      - $ref: '#/components/parameters/bbox-crs-epsg'
+      - description: The optional f parameter indicates the output format which the
+          server shall provide as part of the response document.  The default format
+          is GeoJSON.
+        explode: false
+        in: query
+        name: f
+        required: false
+        schema:
+          default: png
+          enum:
+          - png
+          type: string
+        style: form
+      responses:
+        '200':
+          content:
+            application/json: {}
+          description: Response
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get map
+      tags:
+      - mapserver_world_map
+  /collections/obs:
+    get:
+      description: My cool observations
+      operationId: describeObsCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Observations metadata
+      tags:
+      - obs
+  /collections/obs/items:
+    get:
+      description: My cool observations
+      operationId: getObsFeatures
+      parameters:
+      - *id001
+      - *id002
+      - $ref: '#/components/parameters/bbox'
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/bbox-crs'
+      - description: The properties that should be included for each feature. The
+          parameter value is a comma-separated list of property names.
+        explode: false
+        in: query
+        name: properties
+        required: false
+        schema:
+          items:
+            enum:
+            - id
+            - stn_id
+            - datetime
+            - value
+            type: string
+          type: array
+        style: form
+      - $ref: '#/components/parameters/vendorSpecificParameters'
+      - $ref: '#/components/parameters/skipGeometry'
+      - $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi/parameters/sortby.yaml
+      - $ref: '#/components/parameters/offset'
+      - explode: false
+        in: query
+        name: id
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: stn_id
+        required: false
+        schema:
+          type: integer
+        style: form
+      - explode: false
+        in: query
+        name: datetime
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: value
+        required: false
+        schema:
+          type: number
+        style: form
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Observations items
+      tags:
+      - obs
+  /collections/obs/items/{featureId}:
+    get:
+      description: My cool observations
+      operationId: getObsFeature
+      parameters:
+      - $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Observations item by id
+      tags:
+      - obs
+  /collections/obs/queryables:
+    get:
+      description: My cool observations
+      operationId: getObsQueryables
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/Queryables'
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Observations queryables
+      tags:
+      - obs
+  /conformance:
+    get:
+      description: API conformance definition
+      operationId: getConformanceDeclaration
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: API conformance definition
+      tags:
+      - server
+  /jobs:
+    get:
+      description: Retrieve a list of jobs
+      operationId: getJobs
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Retrieve jobs list
+      tags:
+      - server
+  /jobs/{jobId}:
+    delete:
+      description: Cancel / delete job
+      operationId: deleteJob
+      parameters:
+      - &id003
+        description: job identifier
+        in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          $ref: '#/components/responses/204'
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Cancel / delete job
+      tags:
+      - server
+    get:
+      description: Retrieve job details
+      operationId: getJob
+      parameters:
+      - *id003
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Retrieve job details
+      tags:
+      - server
+  /jobs/{jobId}/results:
+    get:
+      description: Retrive job resiults
+      operationId: getJobResults
+      parameters:
+      - *id003
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Retrieve job results
+      tags:
+      - server
+  /openapi:
+    get:
+      description: This document
+      operationId: getOpenapi
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      - description: UI to render the OpenAPI document
+        explode: false
+        in: query
+        name: ui
+        required: false
+        schema:
+          default: swagger
+          enum:
+          - swagger
+          - redoc
+          type: string
+        style: form
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '400':
+          $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        default:
+          $ref: '#/components/responses/default'
+      summary: This document
+      tags:
+      - server
+  /processes:
+    get:
+      description: Processes
+      operationId: getProcesses
+      parameters:
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ProcessList.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Processes
+      tags:
+      - server
+  /processes/hello-world:
+    get:
+      description: An example process that takes a name as input, and echoes it back
+        as output. Intended to demonstrate a simple process with a single literal
+        input.
+      operationId: describeHello-worldProcess
+      parameters:
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/default'
+      summary: Get process metadata
+      tags:
+      - hello-world
+  /processes/hello-world/execution:
+    post:
+      description: An example process that takes a name as input, and echoes it back
+        as output. Intended to demonstrate a simple process with a single literal
+        input.
+      operationId: executeHello-worldJob
+      requestBody:
+        content:
+          application/json:
+            example:
+              inputs:
+                message: An optional message.
+                name: World
+            schema:
+              $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/execute.yaml
+        description: Mandatory execute request JSON
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '201':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ExecuteAsync.yaml
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ServerError.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Process Hello World execution
+      tags:
+      - hello-world
+  /stac:
+    get:
+      description: SpatioTemporal Asset Catalog
+      operationId: getStacCatalog
+      parameters: []
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/default'
+      summary: SpatioTemporal Asset Catalog
+      tags:
+      - stac
+servers:
+- description: pygeoapi OGC API - Pub/Sub demonstration
+  url: http://localhost:5000
+tags:
+- description: pygeoapi OGC API - Pub/Sub demonstration
+  externalDocs:
+    description: information
+    url: https://pygeoapi.io
+  name: server
+- description: SpatioTemporal Asset Catalog
+  name: stac
+- description: My cool observations
+  name: obs
+- description: lakes of the world, public domain
+  name: lakes
+- description: MapServer demo WMS world map
+  name: mapserver_world_map
+- description: Global Deterministic Prediction System sample
+  name: gdps-temperature
+- description: Sample metadata records from open.canada.ca
+  name: canada-metadata
+- description: ERDDAP demo
+  name: erddap-demo
+- description: Canada surface weather observations
+  name: canada-surface-weather-obs
+- description: An example process that takes a name as input, and echoes it back as
+    output. Intended to demonstrate a simple process with a single literal input.
+  name: hello-world

@@ -36,11 +36,11 @@
 #
 # providers:
 #     -   type: feature
-#         name: pygeoapi.provider.erddap.TabledapProvider
+#         name: ERDDAPTabledap
 #         data: http://osmc.noaa.gov/erddap/tabledap/OSMC_Points
-#         id_field: id
+#         id_field: PLATFORM_CODE
 #         options:
-#             filters: "&parameter=\"SLP\"&platform!=\"C-MAN%20WEATHER%20STATIONS\"&platform!=\"TIDE GAUGE STATIONS (GENERIC)\""   # noqa
+#             filters: "parameter=\"SLP\"&platform!=\"C-MAN%20WEATHER%20STATIONS\"&platform!=\"TIDE GAUGE STATIONS (GENERIC)\""   # noqa
 #             max_age_hours: 12
 
 

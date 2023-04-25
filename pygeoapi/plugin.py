@@ -71,6 +71,9 @@ PLUGINS = {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
         'MongoDB': 'pygeoapi.process.manager.mongodb_.MongoDBManager',
         'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
+    },
+    'pubsub': {
+        'MQTT': 'pygeoapi.pubsub.mqtt.MQTTPublisher'
     }
 }
 

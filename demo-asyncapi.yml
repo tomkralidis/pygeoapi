@@ -1,0 +1,89 @@
+asyncapi: 2.6.0
+channels:
+  collections/canada-metadata:
+    description: Open Canada sample data
+    subscribe:
+      message:
+        oneOf:
+        - messageId: message-canada-metadata
+          payload:
+            $ref: https://geojson.org/schema/Feature.json
+      operationId: notify-canada-metadata
+  collections/canada-surface-weather-obs:
+    description: Canada surface weather observations
+    subscribe:
+      message:
+        oneOf:
+        - messageId: message-canada-surface-weather-obs
+          payload:
+            $ref: https://geojson.org/schema/Feature.json
+      operationId: notify-canada-surface-weather-obs
+  collections/erddap-demo:
+    description: ERDDAP demo
+    subscribe:
+      message:
+        oneOf:
+        - messageId: message-erddap-demo
+          payload:
+            $ref: https://geojson.org/schema/Feature.json
+      operationId: notify-erddap-demo
+  collections/gdps-temperature:
+    description: Global Deterministic Prediction System sample
+    subscribe:
+      message:
+        oneOf:
+        - messageId: message-gdps-temperature
+          payload:
+            $ref: https://geojson.org/schema/Feature.json
+      operationId: notify-gdps-temperature
+  collections/lakes:
+    description: Large Lakes
+    subscribe:
+      message:
+        oneOf:
+        - messageId: message-lakes
+          payload:
+            $ref: https://geojson.org/schema/Feature.json
+      operationId: notify-lakes
+  collections/mapserver_world_map:
+    description: MapServer demo WMS world map
+    subscribe:
+      message:
+        oneOf:
+        - messageId: message-mapserver_world_map
+          payload:
+            $ref: https://geojson.org/schema/Feature.json
+      operationId: notify-mapserver_world_map
+  collections/obs:
+    description: Observations
+    subscribe:
+      message:
+        oneOf:
+        - messageId: message-obs
+          payload:
+            $ref: https://geojson.org/schema/Feature.json
+      operationId: notify-obs
+defaultContentType: application/json
+externalDocs:
+  url: https://pygeoapi.io
+id: http://localhost:5000
+info:
+  contact:
+    email: you@example.org
+    name: Kralidis, Tom
+    url: https://pygeoapi.io
+  description: pygeoapi OGC API - Pub/Sub demonstration
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  title: pygeoapi OGC API - Pub/Sub demonstration
+  version: 0.15.dev0
+servers:
+  production:
+    description: pygeoapi OGC API - Pub/Sub demonstration
+    protocol: mqtt
+    url: mqtt://localhost:1883
+tags:
+- name: geospatial
+- name: data
+- name: api
