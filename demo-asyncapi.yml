@@ -1,71 +1,55 @@
-asyncapi: 2.6.0
+asyncapi: 3.0.0
 channels:
-  collections/canada-metadata:
+  notify-canada-metadata:
+    address: collections/canada-metadata
     description: Open Canada sample data
-    subscribe:
-      message:
-        oneOf:
-        - messageId: message-canada-metadata
-          payload:
-            $ref: https://geojson.org/schema/Feature.json
-      operationId: notify-canada-metadata
-  collections/canada-surface-weather-obs:
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/extensions/pubsub/openapi/schemas/pubsub-message-payload-schema.yaml
+  notify-canada-surface-weather-obs:
+    address: collections/canada-surface-weather-obs
     description: Canada surface weather observations
-    subscribe:
-      message:
-        oneOf:
-        - messageId: message-canada-surface-weather-obs
-          payload:
-            $ref: https://geojson.org/schema/Feature.json
-      operationId: notify-canada-surface-weather-obs
-  collections/erddap-demo:
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/extensions/pubsub/openapi/schemas/pubsub-message-payload-schema.yaml
+  notify-erddap-demo:
+    address: collections/erddap-demo
     description: ERDDAP demo
-    subscribe:
-      message:
-        oneOf:
-        - messageId: message-erddap-demo
-          payload:
-            $ref: https://geojson.org/schema/Feature.json
-      operationId: notify-erddap-demo
-  collections/gdps-temperature:
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/extensions/pubsub/openapi/schemas/pubsub-message-payload-schema.yaml
+  notify-gdps-temperature:
+    address: collections/gdps-temperature
     description: Global Deterministic Prediction System sample
-    subscribe:
-      message:
-        oneOf:
-        - messageId: message-gdps-temperature
-          payload:
-            $ref: https://geojson.org/schema/Feature.json
-      operationId: notify-gdps-temperature
-  collections/lakes:
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/extensions/pubsub/openapi/schemas/pubsub-message-payload-schema.yaml
+  notify-lakes:
+    address: collections/lakes
     description: Large Lakes
-    subscribe:
-      message:
-        oneOf:
-        - messageId: message-lakes
-          payload:
-            $ref: https://geojson.org/schema/Feature.json
-      operationId: notify-lakes
-  collections/mapserver_world_map:
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/extensions/pubsub/openapi/schemas/pubsub-message-payload-schema.yaml
+  notify-mapserver_world_map:
+    address: collections/mapserver_world_map
     description: MapServer demo WMS world map
-    subscribe:
-      message:
-        oneOf:
-        - messageId: message-mapserver_world_map
-          payload:
-            $ref: https://geojson.org/schema/Feature.json
-      operationId: notify-mapserver_world_map
-  collections/obs:
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/extensions/pubsub/openapi/schemas/pubsub-message-payload-schema.yaml
+  notify-obs:
+    address: collections/obs
     description: Observations
-    subscribe:
-      message:
-        oneOf:
-        - messageId: message-obs
-          payload:
-            $ref: https://geojson.org/schema/Feature.json
-      operationId: notify-obs
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/extensions/pubsub/openapi/schemas/pubsub-message-payload-schema.yaml
 defaultContentType: application/json
-externalDocs:
-  url: https://pygeoapi.io
 id: http://localhost:5000
 info:
   contact:
@@ -73,17 +57,76 @@ info:
     name: Kralidis, Tom
     url: https://pygeoapi.io
   description: pygeoapi OGC API - Pub/Sub demonstration
+  externalDocs:
+    url: https://pygeoapi.io
   license:
     name: CC-BY 4.0 license
     url: https://creativecommons.org/licenses/by/4.0/
+  tags:
+  - name: geospatial
+  - name: data
+  - name: api
   title: pygeoapi OGC API - Pub/Sub demonstration
   version: 0.15.dev0
+operations:
+  consume-canada-metadata:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-canada-metadata'
+  consume-canada-surface-weather-obs:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-canada-surface-weather-obs'
+  consume-erddap-demo:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-erddap-demo'
+  consume-gdps-temperature:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-gdps-temperature'
+  consume-lakes:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-lakes'
+  consume-mapserver_world_map:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-mapserver_world_map'
+  consume-obs:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-obs'
+  publish-canada-metadata:
+    action: send
+    channel:
+      $ref: '#/channels/notify-canada-metadata'
+  publish-canada-surface-weather-obs:
+    action: send
+    channel:
+      $ref: '#/channels/notify-canada-surface-weather-obs'
+  publish-erddap-demo:
+    action: send
+    channel:
+      $ref: '#/channels/notify-erddap-demo'
+  publish-gdps-temperature:
+    action: send
+    channel:
+      $ref: '#/channels/notify-gdps-temperature'
+  publish-lakes:
+    action: send
+    channel:
+      $ref: '#/channels/notify-lakes'
+  publish-mapserver_world_map:
+    action: send
+    channel:
+      $ref: '#/channels/notify-mapserver_world_map'
+  publish-obs:
+    action: send
+    channel:
+      $ref: '#/channels/notify-obs'
 servers:
   production:
     description: pygeoapi OGC API - Pub/Sub demonstration
+    host: localhost:1883
     protocol: mqtt
-    url: mqtt://localhost:1883
-tags:
-- name: geospatial
-- name: data
-- name: api

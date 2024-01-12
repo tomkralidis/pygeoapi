@@ -390,5 +390,6 @@ resources:
             - type: feature
               editable: true
               name: Elasticsearch
+              #data: http://localhost:9200/canada-surface-weather.*
               data: http://localhost:9200/canada-surface-weather-obs
               id_field: id

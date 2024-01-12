@@ -819,7 +819,7 @@ def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
 
 def remove_url_auth(url: str) -> str:
     """
-    Provide a RFC1738 URL without embedded authentification
+    Provide a RFC1738 URL without embedded authentication
 
     :param url: RFC1738 URL
 

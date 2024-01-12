@@ -67,11 +67,12 @@ def gen_asyncapi(cfg: dict) -> dict:
     tags = l10n.translate(cfg['metadata']['identification']['keywords'], locale_)  # noqa
 
     u = cfg['pubsub']['broker']['url']
-    url = remove_url_auth(u)
-    protocol = urlparse(u).scheme
+    up = urlparse(u)
+    protocol = up.scheme
+    url = remove_url_auth(u).replace(f'{protocol}://', '')
 
     a = {
-        'asyncapi': '2.6.0',
+        'asyncapi': '3.0.0',
         'id': cfg['server']['url'],
         'defaultContentType': 'application/json',
         'info': {
@@ -86,20 +87,21 @@ def gen_asyncapi(cfg: dict) -> dict:
                 'name': cfg['metadata']['contact']['name'],
                 'url': cfg['metadata']['contact']['url'],
                 'email': cfg['metadata']['contact']['email']
-            }
+            },
+            'tags': [{'name': tag} for tag in tags],
+            'externalDocs': {
+                'url': cfg['metadata']['identification']['url']
+            },
         },
         'servers': {
             'production': {
-                'url': url,
+                'host': url,
                 'protocol': protocol,
                 'description': description
             }
         },
         'channels': {},
-        'tags': [{'name': tag} for tag in tags],
-        'externalDocs': {
-            'url': cfg['metadata']['identification']['url']
-        }
+        'operations': {}
     }
 
     LOGGER.debug('Generating channels foreach collection')
@@ -111,21 +113,33 @@ def gen_asyncapi(cfg: dict) -> dict:
         title = l10n.translate(value['title'], locale_)
         channel = {
             'description': title,
-            'subscribe': {
-                'operationId': f'notify-{key}',
-                'message': {
-                    'oneOf': [{
-                        'messageId': f'message-{key}',
-                        'payload': {
-                            #'type': 'object',
-                            '$ref': 'https://geojson.org/schema/Feature.json'
-                        }
-                    }]
+            'address': f'collections/{key}',
+            'messages': {
+                'DefaultMessage': {
+                    'payload': {
+                        '$ref': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/extensions/pubsub/openapi/schemas/pubsub-message-payload-schema.yaml'  # noqa
+                    }
                 }
             }
         }
 
-        a['channels'][f'collections/{key}'] = channel
+        operation = {
+            f'publish-{key}': {
+                'action': 'send',
+                'channel': {
+                    '$ref': f'#/channels/notify-{key}'
+                }
+            },
+            f'consume-{key}': {
+                'action': 'receive',
+                'channel': {
+                    '$ref': f'#/channels/notify-{key}'
+                }
+            }
+        }
+
+        a['channels'][f'notify-{key}'] = channel
+        a['operations'].update(operation)
 
     return a
 
