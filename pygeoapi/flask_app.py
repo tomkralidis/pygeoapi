@@ -45,6 +45,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+import pygeoapi.api.newapi as new_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -521,6 +522,17 @@ def get_collection_edr_query(collection_id, instance_id=None,
         query_type, location_id,
         skip_valid_check=True,
     )
+
+
+@BLUEPRINT.route('/my-function')
+def newapi_my_function():
+    """
+    Custom my function endpoint
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(new_api.my_function, request)
 
 
 @BLUEPRINT.route('/stac')
