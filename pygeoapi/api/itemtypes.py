@@ -960,12 +960,15 @@ def manage_collection_item(
                 'InvalidParameterValue', msg)
 
     if action == 'options':
-        headers['Allow'] = 'HEAD, GET'
+        allow = ['HEAD', 'GET']
         if p.editable:
             if identifier is None:
-                headers['Allow'] += ', POST'
+                allow.append('POST')
             else:
-                headers['Allow'] += ', PUT, DELETE'
+                allow.extend(['PUT', 'DELETE'])
+
+        headers['Allow'] = ', '.join(allow)
+
         return headers, HTTPStatus.OK, ''
 
     if not p.editable:

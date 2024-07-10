@@ -565,6 +565,9 @@ properties:
                                       description: |-
                                           see `pygeoapi.plugin` for supported provider names.
                                           For custom built plugins, use the import path (e.g. `mypackage.provider.MyProvider`)
+                                  cwl:
+                                      type: string
+                                      description: Common Workflow Language (CWL) definition.
                               required:
                                   - name
                       required:

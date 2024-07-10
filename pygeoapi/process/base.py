@@ -51,8 +51,10 @@ class BaseProcessor:
         """
 
         self.name = processor_def['name']
+        self.cwl = processor_def.get('cwl')
         self.metadata = process_metadata
         self.supports_outputs = False
+        self.mutable = False
 
     def set_job_id(self, job_id: str) -> None:
         """
@@ -83,6 +85,39 @@ class BaseProcessor:
                         property `transmissionMode` - defaults to `value`.
         :returns: tuple of MIME type and process response
                   (string or bytes, or dict)
+        """
+
+        raise NotImplementedError()
+
+    def create(self, data: Any):
+        """
+        Create a new process
+
+        :param data: payload of new process (JSON, YAML)
+
+        :returns: identifier of created process
+        """
+
+        raise NotImplementedError()
+
+    def update(self, process):
+        """
+        Updates an existing process
+
+        :param identifier: process id
+
+        :returns: `bool` of update result
+        """
+
+        raise NotImplementedError()
+
+    def delete(self, process):
+        """
+        Deletes an existing process
+
+        :param process: process id
+
+        :returns: `bool` of deletion result
         """
 
         raise NotImplementedError()

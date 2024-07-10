@@ -48,13 +48,16 @@ import logging
 from typing import Tuple
 
 from pygeoapi import l10n
+from pygeoapi.admin import Admin
+from pygeoapi.plugin import load_plugin
 from pygeoapi.util import (
     json_serial, render_j2_template, JobStatus, RequestedProcessExecutionMode,
     to_json, DATETIME_FORMAT)
 from pygeoapi.process.base import (
-    JobNotFoundError, JobResultNotFoundError, ProcessorExecuteError
-)
+    JobNotFoundError, JobResultNotFoundError, ProcessorExecuteError,
+    ProcessorGenericError)
 from pygeoapi.process.manager.base import get_manager, Subscriber
+from pygeoapi.util import yaml_load
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
@@ -67,7 +70,9 @@ CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30',
-    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/callback'
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/callback',
+    'http://www.opengis.net/spec/ogcapi-processes-2/1.0/conf/deploy-replace-undeploy',  # noqa
+    'http://www.opengis.net/spec/ogcapi-processes-2/1.0/conf/cwl'
 ]
 
 
@@ -184,6 +189,14 @@ def describe_processes(api: API, request: APIRequest,
                 'hreflang': api.default_locale
             }
             p2['links'].append(link)
+            p2['mutable'] = p.mutable
+
+            if p.cwl is not None:
+                with open(p.cwl) as fh:
+                    p2['executationUnit'] = {
+                        'type': 'application/cwl+json',
+                        'value': yaml_load(fh)
+                    }
 
             processes.append(p2)
 
@@ -326,6 +339,122 @@ def get_jobs(api: API, request: APIRequest,
 
     return headers, HTTPStatus.OK, to_json(serialized_jobs,
                                            api.pretty_print)
+
+
+def manage_process(
+        api: API, request: APIRequest,
+        action, process=None) -> Tuple[dict, int, str]:
+    """
+    Manages processes
+
+    :param request: A request object
+    :param action: an action among 'create', 'update', 'delete', 'options'
+    :param process: processer identifier
+
+    :returns: tuple of headers, status code, content
+    """
+
+    # Set Content-Language to system locale until provider locale
+    # has been determined
+    headers = request.get_response_headers(SYSTEM_LOCALE, **api.api_headers)
+
+    if process is not None:
+        if process not in api.manager.processes.keys():
+            msg = 'Identifier not found'
+            return api.get_exception(
+                HTTPStatus.NOT_FOUND, headers,
+                request.format, 'NoSuchProcess', msg)
+
+    if action == 'options':
+        allow = ['HEAD', 'GET']
+        if api.manager:
+            if process is None:
+                allow.append('POST')
+            else:
+                allow.extend(['PUT', 'DELETE'])
+
+        headers['Allow'] = ', '.join(allow)
+
+        return headers, HTTPStatus.OK, ''
+
+    if not api.manager:
+        msg = 'Processes are not editable'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', msg)
+
+    # FIXME: hardcoded to CWL (is this a problem for mutable processes
+    # support?
+    process_def = {
+        'type': 'process',
+        'processor': {
+            'name': 'pygeoapi.process.cwl_runner.CwlRunnerProcessor'
+        }
+    }
+
+    admin_ = Admin(api.config, api.openapi)
+
+    p = load_plugin('process', process_def['processor'])
+
+    if action in ['create', 'update'] and not request.data:
+        msg = 'No data found'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', msg)
+
+    if action == 'create':
+        LOGGER.debug('Creating item')
+        try:
+            process_identifier = p.create(request.data)
+            cwl_file = f'{api.manager.output_dir}/{process_identifier}'
+            process_def['processor']['cwl'] = cwl_file
+
+            new_resource = {
+                process_identifier: process_def
+            }
+
+            request._data = json.dumps(new_resource)
+            _ = admin_.post_resource(request)
+        except TypeError as err:
+            msg = str(err)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+        except ProcessorGenericError as err:
+            return api.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
+
+        headers['Location'] = f'{api.base_url}/{process_identifier}'
+
+        return headers, HTTPStatus.CREATED, ''
+
+    if action == 'update':
+        LOGGER.debug('Updating process')
+        try:
+            _ = p.update(process, request.data)
+        except TypeError as err:
+            msg = str(err)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+        except ProcessorGenericError as err:
+            return api.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
+
+        return headers, HTTPStatus.NO_CONTENT, ''
+
+    if action == 'delete':
+        LOGGER.debug('Deleting process')
+        try:
+            _ = p.delete(process)
+        except ProcessorGenericError as err:
+            return api.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
+
+        return headers, HTTPStatus.OK, ''
 
 
 def execute_process(api: API, request: APIRequest,
@@ -600,6 +729,30 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             }
         }
 
+        if process_manager:
+            LOGGER.debug('Process management enabled; adding post')
+
+            paths['/processes']['post'] = {
+                'summary': 'Add process',
+                'description': 'Add Process',
+                'tags': ['server'],
+                'operationId': 'addProcess',
+                'requestBody': {
+                    'description': 'Adds process to server',
+                    'content': {
+                        'application/cwl': {
+                            'schema': {}
+                        }
+                    },
+                    'required': True
+                },
+                'responses': {
+                    '201': {'description': 'Successful creation'},
+                    '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                    '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                }
+            }
+
     LOGGER.debug('setting up processes')
 
     for k, v in process_manager.processes.items():
@@ -642,6 +795,47 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 }
             }
         }
+
+        if process_manager:
+            LOGGER.debug('Process management enabled; adding put/delete')
+            paths[process_name_path]['put'] = {  # noqa
+                'summary': f'Update {name} process',
+                'description': md_desc,
+                'tags': [name],
+                'operationId': f'update{name.capitalize()}Process',
+                'parameters': [
+                    {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/processId"}  # noqa
+                ],
+                'requestBody': {
+                    'description': 'Updates a process',
+                    'content': {
+                        'application/cwl': {
+                            'schema': {}
+                        }
+                    },
+                    'required': True
+                },
+                'responses': {
+                    '204': {'$ref': '#/components/responses/204'},
+                    '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                    '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                }
+            }
+
+            paths[process_name_path]['delete'] = {  # noqa
+                'summary': f'Delete {name} process',
+                'description': md_desc,
+                'tags': [name],
+                'operationId': f'delete{name.capitalize()}Process',
+                'parameters': [
+                    {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/processId"}  # noqa
+                ],
+                'responses': {
+                    '200': {'description': 'Successful delete'},
+                    '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                    '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                }
+            }
 
         paths[f'{process_name_path}/execution'] = {
             'post': {

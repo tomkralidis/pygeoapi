@@ -601,6 +601,15 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
                 'schema': {
                     'type': 'string'
                  }
+            },
+            'processId': {
+                'name': 'processId',
+                'in': 'path',
+                'description': 'local identifier of a process',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                }
             }
         }
 

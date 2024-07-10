@@ -401,8 +401,8 @@ def collection_map(collection_id, style_id=None):
     )
 
 
-@BLUEPRINT.route('/processes')
-@BLUEPRINT.route('/processes/<process_id>')
+@BLUEPRINT.route('/processes', methods=['GET', 'POST'])
+@BLUEPRINT.route('/processes/<process_id>', methods=['GET', 'PUT', 'DELETE'])
 def get_processes(process_id=None):
     """
     OGC API - Processes description endpoint
@@ -412,8 +412,33 @@ def get_processes(process_id=None):
     :returns: HTTP response
     """
 
-    return execute_from_flask(processes_api.describe_processes, request,
-                              process_id)
+    if process_id is None:
+        if request.method == 'GET':  # list processes
+            return execute_from_flask(processes_api.describe_processes,
+                                      request)
+        elif request.method == 'POST':  # add new process
+            return execute_from_flask(processes_api.manage_process, request,
+                                      'create')
+        elif request.method == 'OPTIONS':
+            return execute_from_flask(
+                    processes_api.manage_process, request, 'options',
+                    skip_valid_check=True)
+
+    elif request.method == 'DELETE':
+        return execute_from_flask(processes_api.manage_process,
+                                  request, 'delete', process_id,
+                                  skip_valid_check=True)
+    elif request.method == 'PUT':
+        return execute_from_flask(processes_api.manage_process,
+                                  request, 'update', process_id,
+                                  skip_valid_check=True)
+    elif request.method == 'OPTIONS':
+        return execute_from_flask(processes_api.manage_process,
+                                  request, 'options', process_id,
+                                  skip_valid_check=True)
+    else:
+        return execute_from_flask(processes_api.describe_processes, request,
+                                  process_id)
 
 
 @BLUEPRINT.route('/jobs')

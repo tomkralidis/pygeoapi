@@ -107,7 +107,8 @@ class TinyDBManager(BaseManager):
         """
 
         with self._db() as db:
-            doc_id = db.insert(job_metadata)
+            jobs = db.table('jobs')
+            doc_id = jobs.insert(job_metadata)
 
         return doc_id  # noqa
 
@@ -122,7 +123,8 @@ class TinyDBManager(BaseManager):
         """
 
         with self._db() as db:
-            db.update(update_dict, tinydb.where('identifier') == job_id)
+            jobs = db.table('jobs')
+            jobs.update(update_dict, tinydb.where('identifier') == job_id)
 
         return True
 
@@ -143,7 +145,8 @@ class TinyDBManager(BaseManager):
             Path(location).unlink()
 
         with self._db() as db:
-            removed = bool(db.remove(tinydb.where('identifier') == job_id))
+            jobs = db.table('jobs')
+            removed = bool(jobs.remove(tinydb.where('identifier') == job_id))
 
         return removed
 
@@ -160,7 +163,8 @@ class TinyDBManager(BaseManager):
 
         query = tinydb.Query()
         with self._db() as db:
-            found = db.search(query.identifier == job_id)
+            jobs = db.table('jobs')
+            found = jobs.search(query.identifier == job_id)
         if found is not None:
             try:
                 return found[0]
