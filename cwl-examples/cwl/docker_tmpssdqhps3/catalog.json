@@ -1,0 +1,18 @@
+{
+  "type": "Catalog",
+  "id": "catalog",
+  "stac_version": "1.0.0",
+  "description": "water-bodies",
+  "links": [
+    {
+      "rel": "root",
+      "href": "./catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "item",
+      "href": "./S2B_10TFK_20210713_0_L2A/S2B_10TFK_20210713_0_L2A.json",
+      "type": "application/json"
+    }
+  ]
+}
