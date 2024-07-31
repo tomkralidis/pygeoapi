@@ -425,7 +425,7 @@ def manage_process(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
 
-        headers['Location'] = f'{api.base_url}/{process_identifier}'
+        headers['Location'] = f'{api.base_url}/processes/{process_identifier}'
 
         return headers, HTTPStatus.CREATED, ''
 
@@ -692,6 +692,44 @@ def delete_job(api: API, request: APIRequest, job_id) -> Tuple[dict, int, str]:
     return {}, http_status, to_json(response, api.pretty_print)
 
 
+def describe_processes_package(api: API, request: APIRequest,
+                               process) -> Tuple[dict, int, str]:
+    """
+    Provide processes metadata
+
+    :param request: A request object
+    :param process: process identifier, defaults to None to obtain
+                    information about all processes
+
+    :returns: tuple of headers, status code, content
+    """
+
+    response = {}
+    p = api.manager.get_processor(process)
+
+    headers = request.get_response_headers(**api.api_headers)
+
+    if process is not None:
+        if process not in api.manager.processes.keys():
+            msg = 'Identifier not found'
+            return api.get_exception(
+                HTTPStatus.NOT_FOUND, headers,
+                request.format, 'NoSuchProcess', msg)
+
+    if p.cwl is None:
+        msg = 'Package not defined for this process'
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers,
+            request.format, 'NoSuchPackage', msg)
+
+    headers['Content-Type'] = 'application/cwl+json'
+
+    with open(p.cwl) as fh:
+        response = yaml_load(fh)
+
+    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
+
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
     """
     Get OpenAPI fragments
@@ -795,6 +833,23 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 }
             }
         }
+
+        if p.cwl is not None:
+            paths[f'{process_name_path}/package'] = {
+                'get': {
+                    'summary': 'Get process package',
+                    'description': md_desc,
+                    'tags': [name],
+                    'operationId': f'describe{name.capitalize()}ProcessPackage',  # noqa
+                    'parameters': [
+                        {'$ref': '#/components/parameters/f'}
+                    ],
+                    'responses': {
+                        '200': {'$ref': '#/components/responses/200'},
+                        'default': {'$ref': '#/components/responses/default'}
+                    }
+                }
+            }
 
         if process_manager:
             LOGGER.debug('Process management enabled; adding put/delete')

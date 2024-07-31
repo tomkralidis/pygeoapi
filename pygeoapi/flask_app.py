@@ -403,6 +403,7 @@ def collection_map(collection_id, style_id=None):
 
 @BLUEPRINT.route('/processes', methods=['GET', 'POST'])
 @BLUEPRINT.route('/processes/<process_id>', methods=['GET', 'PUT', 'DELETE'])
+@BLUEPRINT.route('/processes/<process_id>/package')
 def get_processes(process_id=None):
     """
     OGC API - Processes description endpoint
@@ -424,6 +425,9 @@ def get_processes(process_id=None):
                     processes_api.manage_process, request, 'options',
                     skip_valid_check=True)
 
+    elif 'package' in request.url_rule.rule:
+        return execute_from_flask(processes_api.describe_processes_package,
+                                  request, process_id)
     elif request.method == 'DELETE':
         return execute_from_flask(processes_api.manage_process,
                                   request, 'delete', process_id,
