@@ -192,10 +192,45 @@ def describe_processes(api: API, request: APIRequest,
             p2['mutable'] = p.mutable
 
             if p.cwl is not None:
+                LOGGER.debug('CWL definition detected')
                 with open(p.cwl) as fh:
-                    p2['executationUnit'] = {
-                        'type': 'application/cwl+json',
-                        'value': yaml_load(fh)
+                    cwl_data = yaml_load(fh)
+
+                    p2['inputs'] = {}
+                    p2['outputs'] = {}
+
+                    LOGGER.debug('Parsing CWL inputs')
+                    for key, value in cwl_data.get('inputs', {}).items():
+                        p2['inputs'][key] = {
+                            'title': value.get('label', key),
+                            'schema': {
+                                'type': value['type']
+                            }
+                        }
+                        if isinstance(value['type'], list):
+                            p2['inputs'][key]['schema'] = {
+                                'type': value['type'][0]['type'],
+                                'items': {
+                                    'type': value['type'][0]['items']
+                                }
+                            }
+                        else:
+                            p2['inputs'][key]['schema'] = {
+                                'type': value['type']
+                            }
+
+                    LOGGER.debug('Parsing CWL outputs')
+                    for key, value in cwl_data.get('outputs', {}).items():
+                        p2['outputs'][key] = {
+                            'title': value.get('label', key),
+                            'schema': {
+                                'type': 'object'
+                            }
+                        }
+
+                    p2['executionUnit'] = {
+                        'mediaType': 'application/cwl+json',
+                        'value': cwl_data
                     }
 
             processes.append(p2)
