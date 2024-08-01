@@ -62,7 +62,8 @@ def normalized_difference(array1, array2):
 
 
 def aoi2box(aoi):
-    """Converts an area of interest expressed as a bounding box to a list of floats"""
+    """Converts an area of interest expressed as a bounding box to a
+       list of floats"""
     return [float(c) for c in aoi.split(",")]
 
 
@@ -85,7 +86,7 @@ def get_asset(item, common_name):
 
 @click.command(
     short_help="Water bodies detection",
-    help="Detects water bodies using the Normalized Difference Water Index (NDWI) and Otsu thresholding.",
+    help="Detects water bodies using the Normalized Difference Water Index (NDWI) and Otsu thresholding.",  # noqa
 )
 @click.option(
     "--input-item",
@@ -138,7 +139,7 @@ def main(item_url, aoi, bands, epsg):
 
         cropped_assets[band] = out_image[0]
 
-    nd = normalized_difference(cropped_assets[bands[0]], cropped_assets[bands[1]])
+    nd = normalized_difference(cropped_assets[bands[0]], cropped_assets[bands[1]])  # noqa
 
     water_bodies = threshold(nd)
 
