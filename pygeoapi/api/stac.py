@@ -49,7 +49,7 @@ from pygeoapi.api import itemtypes as itemtypes_api
 from pygeoapi.plugin import load_plugin
 
 from pygeoapi.provider.base import (
-    ProviderConnectionError, ProviderNotFoundError
+    ProviderConnectionError, ProviderNotFoundError, ProviderTypeError
 )
 from pygeoapi.util import (
     filter_dict_by_key_value, get_current_datetime, get_provider_by_type,
@@ -97,15 +97,26 @@ def get_stac_root(api: API, request: APIRequest) -> Tuple[dict, int, str]:
                                                 'type', 'stac-collection')
 
     for key, value in stac_collections.items():
+        try:
+            _ = load_plugin('provider', get_provider_by_type(
+                            value['providers'], 'stac'))
+        except ProviderTypeError:
+            LOGGER.debug('Not a STAC-based provider; skipping')
+            continue
+
         content['links'].append({
             'rel': 'child',
             'href': f'{stac_url}/{key}?f={F_JSON}',
-            'type': FORMAT_TYPES[F_JSON]
+            'type': FORMAT_TYPES[F_JSON],
+            'title': key,
+            'description': value['description']
         })
         content['links'].append({
             'rel': 'child',
             'href': f'{stac_url}/{key}',
-            'type': FORMAT_TYPES[F_HTML]
+            'type': FORMAT_TYPES[F_HTML],
+            'title': key,
+            'description': value['description']
         })
 
     if request.format == F_HTML:  # render
