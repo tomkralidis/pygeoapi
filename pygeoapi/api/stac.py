@@ -297,6 +297,8 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
     :returns: tuple of headers, status code, content
     """
 
+    request._format = F_JSON
+
     headers = request.get_response_headers(**api.api_headers)
 
     collections = filter_dict_by_key_value(api.config['resources'],
