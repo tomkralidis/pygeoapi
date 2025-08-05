@@ -260,12 +260,12 @@ def landing_page(api: API,
         'rel': request.get_linkrel(F_JSON),
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('This document as JSON', request.locale),
-        'href': f"{api.base_url}/stac?f={F_JSON}"
+        'href': f"{api.base_url}/stac-api?f={F_JSON}"
     }, {
         'rel': 'root',
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('This document as JSON', request.locale),
-        'href': f"{api.base_url}/stac?f={F_JSON}"
+        'href': f"{api.base_url}/stac-api?f={F_JSON}"
     }, {
         'rel': 'service-desc',
         'type': 'application/vnd.oai.openapi+json;version=3.0',
@@ -280,8 +280,8 @@ def landing_page(api: API,
     }, {
         'rel': 'search',
         'type': FORMAT_TYPES[F_JSON],
-        'title': l10n.translate('STAC search', request.locale),
-        'href': f"{api.base_url}/stac/search?f={F_JSON}"
+        'title': l10n.translate('STAC API search', request.locale),
+        'href': f"{api.base_url}/stac-api//search?f={F_JSON}"
     }]
 
     return headers, status, to_json(content, api.pretty_print)
@@ -339,13 +339,13 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
     for link in content.get('links', []):
         if 'items' in link['href']:
             link['href'] = link['href'].replace(
-                f'collections/{collection_id}/items', 'stac/search')
+                f'collections/{collection_id}/items', 'stac-api/search')
 
     content['links'].append({
         'rel': 'root',
         'type': FORMAT_TYPES[F_JSON],
-        'title': l10n.translate('STAC landing page', request.locale),
-        'href': f"{api.base_url}/stac?f={F_JSON}"
+        'title': l10n.translate('STAC API landing page', request.locale),
+        'href': f"{api.base_url}/stac-api?f={F_JSON}"
     })
 
     return headers, status, to_json(content, api.pretty_print)
