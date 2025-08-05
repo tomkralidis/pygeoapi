@@ -57,7 +57,7 @@ def test_landing_page(config, api_):
     assert response['type'] == 'Catalog'
     assert response['links'][0]['rel'] == 'self'
     assert response['links'][0]['type'] == 'application/json'
-    assert response['links'][0]['href'] == 'http://localhost:5000/stac?f=json'
+    assert response['links'][0]['href'] == 'http://localhost:5000/stac-api?f=json'  # noqa
     assert len(response['links']) == 5
     assert 'title' in response
     assert response['title'] == 'pygeoapi default instance'
