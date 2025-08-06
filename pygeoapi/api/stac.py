@@ -327,6 +327,11 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
         if found_collection:
             stac_api_collections[key] = value
 
+    if not stac_api_collections:
+        msg = 'No STAC API collections configured'
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers,
+                                 request.format, 'NotApplicable', msg)
+
     if request.data:
         LOGGER.debug('Intercepting STAC POST request into query args')
         request_data = json.loads(request.data)
@@ -351,6 +356,9 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
         headers, status, content = itemtypes_api.get_collection_items(
             api, request, key)
         api.config['resources'][key]['type'] = 'stac-collection'
+
+        if status != HTTPStatus.OK:
+            return headers, status, to_json(content, api.pretty_print)
 
         content = json.loads(content)
         stac_api_response['numberMatched'] += content.get('numberMatched', 0)
@@ -383,7 +391,7 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
 
     if stac_api_response.get('numberMatched', -1) > (limit + offset):
         next_link = True
-    elif len(content['features']) == limit:
+    elif len(stac_api_response['features']) == limit:
         next_link = True
 
     if offset > 0:
@@ -414,7 +422,7 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
             'href': f"{api.base_url}/stac-api/search?{request_params_qs}"
         })
 
-    return headers, status, to_json(stac_api_response, api.pretty_print)
+    return headers, HTTPStatus.OK, to_json(stac_api_response, api.pretty_print)
 
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
