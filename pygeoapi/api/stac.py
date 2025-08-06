@@ -252,7 +252,7 @@ def landing_page(api: API,
     content['stac_version'] = '1.0.0'
     content['conformsTo'] = [
         'https://api.stacspec.org/v1.0.0/core',
-        'https://api.stacspec.org/v1.0.0/item-search'
+        'https://api.stacspec.org/v1.0.0/item-search',
         'https://api.stacspec.org/v1.0.0/item-search#sort'
     ]
     content['type'] = 'Catalog'

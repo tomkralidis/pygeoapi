@@ -54,6 +54,7 @@ def test_landing_page(config, api_):
 
     assert isinstance(response, dict)
     assert 'links' in response
+    assert len(response['conformsTo']) == 3
     assert response['type'] == 'Catalog'
     assert response['links'][0]['rel'] == 'self'
     assert response['links'][0]['type'] == 'application/json'
@@ -63,8 +64,6 @@ def test_landing_page(config, api_):
     assert response['title'] == 'pygeoapi default instance'
     assert 'description' in response
     assert response['description'] == 'pygeoapi provides an API to geospatial data'  # noqa
-
-    assert len(response['conformsTo']) == 2
 
 
 @pytest.mark.parametrize('params,matched,returned', [
