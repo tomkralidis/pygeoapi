@@ -42,6 +42,7 @@ from http import HTTPStatus
 import json
 import logging
 from typing import Any, Tuple, Union
+from urllib.parse import urlencode
 
 from pygeoapi import l10n
 from pygeoapi import api as ogc_api
@@ -297,10 +298,13 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
     :returns: tuple of headers, status code, content
     """
 
+    stac_api_collections = {}
+
     request._format = F_JSON
 
     headers = request.get_response_headers(**api.api_headers)
 
+    LOGGER.debug('Checking for STAC collections')
     collections = filter_dict_by_key_value(api.config['resources'],
                                            'type', 'stac-collection')
 
@@ -309,48 +313,108 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
             HTTPStatus.NOT_IMPLEMENTED, headers, F_JSON, 'NotImplemented',
             'No configured STAC searchable collection')
 
-    collection_id = next(iter(collections.keys()))
+    LOGGER.debug('Checking for STAC collections with features or records')
+    for key, value in collections.items():
+        found_collection = False
+        for fr in ['feature', 'record']:
+            try:
+                _ = get_provider_by_type(value['providers'], fr)
+                found_collection = True
+                break
+            except ProviderTypeError:
+                pass
 
-    api.config['resources'][collection_id]['type'] = 'collection'
+        if found_collection:
+            stac_api_collections[key] = value
 
     if request.data:
         LOGGER.debug('Intercepting STAC POST request into query args')
         request_data = json.loads(request.data)
         request_params = deepcopy(dict(request.params))
 
-        for qp in ['bbox', 'datetime', 'limit']:
+        for qp in ['bbox', 'datetime', 'limit', 'offset']:
             if qp in request_data:
                 request_params[qp] = request_data[qp]
 
         request._args = request_params
         request._data = None
 
-    headers, status, content = itemtypes_api.get_collection_items(
-        api, request, collection_id)
+    stac_api_response = {
+        'type': 'FeatureCollection',
+        'features': [],
+        'numberMatched': 0,
+        'links': []
+    }
 
-    api.config['resources'][collection_id]['type'] = 'stac-collection'
+    for key, value in stac_api_collections.items():
+        api.config['resources'][key]['type'] = 'collection'
+        headers, status, content = itemtypes_api.get_collection_items(
+            api, request, key)
+        api.config['resources'][key]['type'] = 'stac-collection'
 
-    content = json.loads(content)
+        content = json.loads(content)
+        stac_api_response['numberMatched'] += content.get('numberMatched', 0)
 
-    if len(content.get('features', [])) > 0:
-        for feature in content['features']:
-            if 'stac_version' not in feature:
-                feature['stac_version'] = '1.0.0'
-            feature['properties'].update(get_temporal(feature))
+        if len(content.get('features', [])) > 0:
+            for feature in content['features']:
+                if 'stac_version' not in feature:
+                    feature['stac_version'] = '1.0.0'
+                feature['properties'].update(get_temporal(feature))
+                stac_api_response['features'].append(feature)
 
-    for link in content.get('links', []):
-        if 'items' in link['href']:
-            link['href'] = link['href'].replace(
-                f'collections/{collection_id}/items', 'stac-api/search')
+    stac_api_response['numberReturned'] = len(stac_api_response['features'])
 
-    content['links'].append({
+    stac_api_response['links'].append({
         'rel': 'root',
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('STAC API landing page', request.locale),
         'href': f"{api.base_url}/stac-api?f={F_JSON}"
     })
 
-    return headers, status, to_json(content, api.pretty_print)
+    LOGGER.debug('Generating paging links')
+
+    next_link = False
+    prev_link = False
+    request_params = deepcopy(dict(request._args))
+    limit = itemtypes_api.evaluate_limit(
+        request_params.get('limit'),
+        api.config['server'].get('limits', {}), {})
+    offset = int(request_params.get('offset', 0))
+
+    if stac_api_response.get('numberMatched', -1) > (limit + offset):
+        next_link = True
+    elif len(content['features']) == limit:
+        next_link = True
+
+    if offset > 0:
+        prev_link = True
+
+    if prev_link:
+        request_params['offset'] = max(0, offset - limit)
+        if request_params['offset'] == 0:
+            request_params.pop('offset')
+
+        request_params_qs = urlencode(request_params)
+
+        stac_api_response['links'].append({
+            'rel': 'prev',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': l10n.translate('Items (prev)', request.locale),
+            'href': f"{api.base_url}/stac-api/search?{request_params_qs}"
+        })
+
+    if next_link:
+        request_params['offset'] = offset + limit
+        request_params_qs = urlencode(request_params)
+
+        stac_api_response['links'].append({
+            'rel': 'next',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': l10n.translate('Items (next)', request.locale),
+            'href': f"{api.base_url}/stac-api/search?{request_params_qs}"
+        })
+
+    return headers, status, to_json(stac_api_response, api.pretty_print)
 
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
