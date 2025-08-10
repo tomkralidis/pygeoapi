@@ -53,7 +53,7 @@ class TileMatrixSetType:
     id: str
     crs: str
     uri: str
-    href: Optional[str]
+    href: Optional[str] = None
     path: Optional[str] = None
 
 

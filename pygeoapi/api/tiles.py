@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -44,6 +44,7 @@ from typing import Tuple
 
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
+from pygeoapi.models.tiles import DefaultTileMatrixSets
 from pygeoapi.models.provider.base import (TilesMetadataFormat,
                                            TileMatrixSetEnum)
 from pygeoapi.provider.base import (
@@ -349,31 +350,30 @@ def tilematrixsets(api: API,
 
     headers = request.get_response_headers(**api.api_headers)
 
-    # Retrieve available TileMatrixSets
-    enums = [e.value for e in TileMatrixSetEnum]
-
     tms = {"tileMatrixSets": []}
 
-    for e in enums:
+    for tsmd in DefaultTileMatrixSets:
         tms['tileMatrixSets'].append({
-            "title": e.title,
-            "id": e.tileMatrixSet,
-            "uri": e.tileMatrixSetURI,
-            "links": [
+            'title': tsmd.value.id,
+            'id': tsmd.value.id,
+            'uri': tsmd.value.uri,
+            'links': [
                 {
-                   "rel": "self",
-                   "type": "text/html",
-                   "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set",  # noqa
-                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html"  # noqa
+                   'rel': 'self',
+                   'type': 'text/html',
+                   'title': f'The HTML representation of the {tsmd.value.id} tile matrix set',  # noqa
+                   'href': tsmd.value.href or f'{api.base_url}/TileMatrixSets/{tsmd.value.id}?f=html'  # noqa
                 },
                 {
-                   "rel": "self",
-                   "type": "application/json",
-                   "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set",  # noqa
-                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json"  # noqa
+                   'rel': 'self',
+                   'type': 'application/json',
+                   'title': f'The JSON representation of the {tsmd.value.id} tile matrix set',  # noqa
+                   'href': tsmd.value.href or f'{api.base_url}/TileMatrixSets/{tsmd.value.id}?f=json'  # noqa
                 }
             ]
         })
+
+#    for tsmd in
 
     tms['links'] = [{
         "rel": "alternate",
