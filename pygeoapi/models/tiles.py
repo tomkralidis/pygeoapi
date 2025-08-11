@@ -56,6 +56,11 @@ class TileMatrixSetType:
     href: Optional[str] = None
     path: Optional[str] = None
 
+    def __post_init__(self):
+        if self.href is None and self.path is None:
+            msg = 'TileMatrixSetType needs either a path or an href'
+            raise RuntimeError(msg)
+
 
 class DefaultTileMatrixSets(Enum):
     WorldCRS84Quad = TileMatrixSetType(
