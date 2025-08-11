@@ -43,7 +43,7 @@ from pygeoapi.api.tiles import (
     tilematrixsets, get_collection_tiles_metadata,
     get_collection_tiles_data
 )
-from pygeoapi.models.provider.base import TileMatrixSetEnum
+from pygeoapi.models.tiles import DefaultTileMatrixSets
 
 from tests.util import mock_api_request
 
@@ -90,6 +90,7 @@ def test_tilematrixsets(config, api_):
     rsp_headers, code, response = tilematrixsets(api_, req)
     root = json.loads(response)
 
+    print("JJJJ", root)
     assert isinstance(root, dict)
     assert 'tileMatrixSets' in root
     assert len(root['tileMatrixSets']) == 2
@@ -125,25 +126,15 @@ def test_get_collection_tiles_metadata_formats(api_, file_format):
 def test_tilematrixset(config, api_):
     req = mock_api_request()
 
-    enums = [e.value for e in TileMatrixSetEnum]
-    enum = None
+    for dtms in DefaultTileMatrixSets:
+        rsp_headers, code, response = tilematrixset(api_, req, dtms.value.id)
+        assert code == HTTPStatus.MOVED_PERMANENTLY
 
-    for e in enums:
-        enum = e.tileMatrixSet
-        rsp_headers, code, response = tilematrixset(api_, req, enum)
-        root = json.loads(response)
+        rsp_headers, code, response = tilematrixset(api_, req, 'foo')
+        assert code == HTTPStatus.BAD_REQUEST
 
-        assert isinstance(root, dict)
-        assert 'id' in root
-        assert root['id'] == enum
-        assert 'tileMatrices' in root
-        assert len(root['tileMatrices']) == 30
-
-    rsp_headers, code, response = tilematrixset(api_, req, 'foo')
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_api_request({'f': 'html'})
-    rsp_headers, code, response = tilematrixset(api_, req, enum)
-    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
-    # No language requested: should be set to default from YAML
-    assert rsp_headers['Content-Language'] == 'en-US'
+        req = mock_api_request({'f': 'html'})
+        rsp_headers, code, response = tilematrixset(api_, req, dtms.value.id)
+        assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+        # No language requested: should be set to default from YAML
+        assert rsp_headers['Content-Language'] == 'en-US'

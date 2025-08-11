@@ -51,7 +51,6 @@ from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError
 )
 from pygeoapi.provider.tile import ProviderTileNotFoundError
-
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_dict_by_key_value,
     filter_providers_by_type, render_j2_template
@@ -377,6 +376,10 @@ def tilematrixsets(api: API,
     for dataset in api.config['resources'].keys():
         LOGGER.debug('Loading provider')
         try:
+            print("DDD", api.config['resources'][dataset])
+            if 'providers' not in api.config['resources'][dataset]:
+                LOGGER.debug('Not a collection; no providers defined')
+                continue
             t = get_provider_by_type(
                 api.config['resources'][dataset]['providers'], 'tile')
             p = load_plugin('provider', t)

@@ -33,8 +33,7 @@ import logging
 from urllib.parse import urlparse
 
 from pygeoapi.provider.tile import BaseTileProvider
-from pygeoapi.models.provider.base import (
-    TileMatrixSetEnum, TilesMetadataFormat)
+from pygeoapi.models.tiles import DefaultTileMatrixSets, TilesMetadataFormat
 from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
@@ -72,13 +71,9 @@ class BaseMVTProvider(BaseTileProvider):
 
     def get_tiling_schemes(self):
 
-        tile_matrix_set_links_list = [
-            TileMatrixSetEnum.WORLDCRS84QUAD.value,
-            TileMatrixSetEnum.WEBMERCATORQUAD.value
-        ]
         tile_matrix_set_links = [
-            item for item in tile_matrix_set_links_list
-            if item.tileMatrixSet in self.options['schemes']]
+            item.value for item in DefaultTileMatrixSets
+            if item.value.id in self.options['schemes']]
 
         return tile_matrix_set_links
 
@@ -259,19 +254,12 @@ class BaseMVTProvider(BaseTileProvider):
         :returns: tilematrixset enum object
         """
 
-        enums = [e.value for e in TileMatrixSetEnum]
-        enum = None
+        dtms = [d.id for d in DefaultTileMatrixSets]
 
-        try:
-            for e in enums:
-                if tileMatrixSetId == e.tileMatrixSet:
-                    enum = e
-            if not enum:
-                raise ValueError('could not find this tilematrixset')
-            return enum
+        if tileMatrixSetId not in dtms:
+            raise ValueError('could not find this tilematrixset')
 
-        except ValueError as err:
-            LOGGER.error(err)
+        return getattr(DefaultTileMatrixSets, tileMatrixSetId).value
 
     def is_in_limits(self, tilematrixset, z, x, y):
         """

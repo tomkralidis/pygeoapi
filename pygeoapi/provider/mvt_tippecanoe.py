@@ -326,22 +326,23 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
         content = {}
         tiling_schemes = self.get_tiling_schemes()
+        print("TT", tiling_schemes)
         # Default values
-        tileMatrixSetURI = tiling_schemes[0].tileMatrixSetURI
-        crs = tiling_schemes[0].crs
+        tileMatrixSetURI = tiling_schemes['WebMercatorQuad'].uri
+        crs = tiling_schemes['WebMercatorQuad'].crs
 
         tiling_scheme = None
 
         # Checking the selected matrix in configured tiling_schemes
-        for schema in tiling_schemes:
-            if (schema.tileMatrixSet == tileset):
+        for key, schema in tiling_schemes.items():
+            if (schema.id == tileset):
                 crs = schema.crs
-                tileMatrixSetURI = schema.tileMatrixSetURI
+                tileMatrixSetURI = schema.id
 
                 tiling_scheme_url = url_join(
-                    server_url, f'/TileMatrixSets/{schema.tileMatrixSet}')
+                    server_url, f'/TileMatrixSets/{schema.id}')
                 tiling_scheme_url_type = "application/json"
-                tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition'  # noqa
+                tiling_scheme_url_title = f'{schema.id} tile matrix set definition'  # noqa
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
                                          rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme",  # noqa
