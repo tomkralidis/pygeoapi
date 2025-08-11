@@ -58,13 +58,13 @@ class TileMatrixSetType:
 
 
 class DefaultTileMatrixSets(Enum):
-    WORLDCRS84QUAD = TileMatrixSetType(
+    WorldCRS84Quad = TileMatrixSetType(
         id='WorldCRS84Quad',
         crs='http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         uri='http://www.opengis.net/def/tilematrixset/OGC/1.0/WorldCRS84Quad',
         href=f'{TILEMATRIXSET_HREF_BASEURL}/WorldCRS84Quad.json'
     )
-    WEBMERCATORQUAD = TileMatrixSetType(
+    WebMercatorQuad = TileMatrixSetType(
         id='WebMercatorQuad',
         crs='http://www.opengis.net/def/crs/EPSG/0/3857',
         uri='http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad',

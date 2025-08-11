@@ -38,15 +38,15 @@
 # =================================================================
 
 
+import json
 import logging
 from http import HTTPStatus
+from pathlib import Path
 from typing import Tuple
 
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
-from pygeoapi.models.tiles import DefaultTileMatrixSets
-from pygeoapi.models.provider.base import (TilesMetadataFormat,
-                                           TileMatrixSetEnum)
+from pygeoapi.models.tiles import DefaultTileMatrixSets, TilesMetadataFormat
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError
 )
@@ -148,10 +148,10 @@ def get_collection_tiles(api: API, request: APIRequest,
     if t['format']['mimetype'].startswith('image'):
         datatype = 'map'
 
-    for matrix in tiling_schemes:
+    for matrix in tiling_schemes.values():
         tile_matrix = {
             'title': dataset,
-            'tileMatrixSetURI': matrix.tileMatrixSetURI,
+            'tileMatrixSetURI': matrix.uri,
             'crs': matrix.crs,
             'dataType': datatype,
             'links': []
@@ -160,19 +160,19 @@ def get_collection_tiles(api: API, request: APIRequest,
             'type': FORMAT_TYPES[F_JSON],
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
             'title': l10n.translate('TileMatrixSet definition in JSON', request.locale),  # noqa
-            'href': f'{api.base_url}/TileMatrixSets/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
+            'href': matrix.href or f'{api.base_url}/TileMatrixSets/{matrix.id}?f={F_JSON}'  # noqa
         })
         tile_matrix['links'].append({
             'type': FORMAT_TYPES[F_JSON],
             'rel': request.get_linkrel(F_JSON),
-            'title': f'{dataset} - {matrix.tileMatrixSet} - {F_JSON}',
-            'href': f'{api.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
+            'title': f'{dataset} - {matrix.id} - {F_JSON}',
+            'href': f'{api.get_collections_url()}/{dataset}/tiles/{matrix.id}?f={F_JSON}'  # noqa
         })
         tile_matrix['links'].append({
             'type': FORMAT_TYPES[F_HTML],
             'rel': request.get_linkrel(F_HTML),
-            'title': f'{dataset} - {matrix.tileMatrixSet} - {F_HTML}',
-            'href': f'{api.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_HTML}'  # noqa
+            'title': f'{dataset} - {matrix.id} - {F_HTML}',
+            'href': f'{api.get_collections_url()}/{dataset}/tiles/{matrix.id}?f={F_HTML}'  # noqa
         })
 
         tiles['tilesets'].append(tile_matrix)
@@ -182,8 +182,7 @@ def get_collection_tiles(api: API, request: APIRequest,
         tiles['id'] = dataset
         tiles['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], SYSTEM_LOCALE)
-        tiles['tilesets'] = [
-            scheme.tileMatrixSet for scheme in p.get_tiling_schemes()]
+        tiles['tilesets'] = p.get_tiling_schemes().keys()
         tiles['bounds'] = \
             api.config['resources'][dataset]['extents']['spatial']['bbox']
         tiles['minzoom'] = p.options['zoom']['min']
@@ -352,6 +351,7 @@ def tilematrixsets(api: API,
 
     tms = {"tileMatrixSets": []}
 
+    LOGGER.debug('Getting default tile matrix sets')
     for tsmd in DefaultTileMatrixSets:
         tms['tileMatrixSets'].append({
             'title': tsmd.value.id,
@@ -373,7 +373,45 @@ def tilematrixsets(api: API,
             ]
         })
 
-#    for tsmd in
+    LOGGER.debug('Getting custom tile matrix sets')
+    for dataset in api.config['resources'].keys():
+        LOGGER.debug('Loading provider')
+        try:
+            t = get_provider_by_type(
+                api.config['resources'][dataset]['providers'], 'tile')
+            p = load_plugin('provider', t)
+
+            for key, value in p.get_tiling_schemes().items():
+                if key in [e.value.id for e in DefaultTileMatrixSets]:
+                    continue
+                tms['tileMatrixSets'].append({
+                    'title': value.id,
+                    'id': value.id,
+                    'uri': value.uri,
+                    'links': [{
+                        'rel': 'self',
+                        'type': 'text/html',
+                        'title': f'The HTML representation of the {value.id} tile matrix set',  # noqa
+                        'href': value.href or f'{api.base_url}/TileMatrixSets/{value.id}?f=html'  # noqa
+                    }, {
+                        'rel': 'self',
+                        'type': 'application/json',
+                        'title': f'The JSON representation of the {value.id} tile matrix set',  # noqa
+                        'href': value.href or f'{api.base_url}/TileMatrixSets/{value.id}?f=json'  # noqa
+                    }]
+                })
+
+        except KeyError:
+            msg = 'Invalid collection tiles'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+        except ProviderTypeError:
+            pass
+        except ProviderGenericError as err:
+            return api.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
     tms['links'] = [{
         "rel": "alternate",
@@ -411,37 +449,55 @@ def tilematrixset(api: API,
     headers = request.get_response_headers(**api.api_headers)
 
     # Retrieve relevant TileMatrixSet
-    enums = [e.value for e in TileMatrixSetEnum]
-    enum = None
+    dtms = [e.value.id for e in DefaultTileMatrixSets]
 
-    try:
-        for e in enums:
-            if tileMatrixSetId == e.tileMatrixSet:
-                enum = e
-        if not enum:
-            raise ValueError('could not find this tilematrixset')
-    except ValueError as err:
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', str(err))
+    if tileMatrixSetId in dtms:
+        r_url = DefaultTileMatrixSets[tileMatrixSetId].value.href
+        headers['Location'] = r_url
+        return headers, HTTPStatus.MOVED_PERMANENTLY, f'Redirecting to {r_url}'
 
-    tms = {
-        "title": enum.tileMatrixSet,
-        "crs": enum.crs,
-        "id": enum.tileMatrixSet,
-        "uri": enum.tileMatrixSetURI,
-        "orderedAxes": enum.orderedAxes,
-        "wellKnownScaleSet": enum.wellKnownScaleSet,
-        "tileMatrices": enum.tileMatrices
-    }
+    tms_def = None
+
+    LOGGER.debug('Getting collection tile matrix sets')
+    for dataset in api.config['resources'].keys():
+        LOGGER.debug('Loading provider')
+        try:
+            t = get_provider_by_type(
+                api.config['resources'][dataset]['providers'], 'tile')
+            p = load_plugin('provider', t)
+
+            ts = p.get_tiling_schemes()
+            if tileMatrixSetId in ts:
+                tms_def = ts[tileMatrixSetId]
+        except KeyError:
+            msg = 'Invalid collection tiles'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+        except ProviderTypeError:
+            pass
+        except ProviderGenericError as err:
+            return api.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
+
+    if tms_def is None:
+        msg = 'TileMatrixSet not found'
+        return headers, HTTPStatus.NOT_FOUND, msg
+
+    if tms_def.href is not None:
+        headers['Location'] = tms_def.href
+    elif tms_def.path is not None:
+        with Path(tms_def.path).open as fh:
+            tmsd = json.load(fh)
 
     if request.format == F_HTML:  # render
         content = render_j2_template(api.tpl_config, api.tpl_config,
                                      'tilematrixsets/tilematrixset.html',
-                                     tms, request.locale)
+                                     tmsd, request.locale)
         return headers, HTTPStatus.OK, content
 
-    return headers, HTTPStatus.OK, to_json(tms, api.pretty_print)
+    return headers, HTTPStatus.OK, to_json(tmsd, api.pretty_print)
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
     """

@@ -2,9 +2,11 @@
 #
 # Authors: Joana Simoes <jo@byteroad.net>
 #          Francesco Bartoli <xbartolone@gmail.com>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2023 Joana Simoes
 # Copyright (c) 2025 Francesco Bartoli
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -41,6 +43,7 @@ from pygeoapi.provider.base import (ProviderConnectionError,
                                     ProviderInvalidQueryError,
                                     ProviderGenericError)
 from pygeoapi.provider.base_mvt import BaseMVTProvider
+from pygeoapi.models.tiles import DefaultTileMatrixSets
 from pygeoapi.models.provider.base import (
     TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.models.provider.mvt import MVTTilesJson
@@ -140,7 +143,10 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
     def get_tiling_schemes(self):
         "Only WebMercatorQuad tiling scheme is supported in elastic"
-        return [TileMatrixSetEnum.WEBMERCATORQUAD.value]
+
+        return {
+            'WebMercatorQuad': DefaultTileMatrixSets.WebMercatorQuad.value
+        }
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
