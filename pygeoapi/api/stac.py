@@ -44,6 +44,8 @@ import logging
 from typing import Any, Tuple, Union
 from urllib.parse import urlencode
 
+from shapely import from_geojson
+
 from pygeoapi import l10n
 from pygeoapi import api as ogc_api
 from pygeoapi.api import itemtypes as itemtypes_api
@@ -339,7 +341,7 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
 
         for qp in ['bbox', 'datetime', 'limit', 'offset']:
             if qp in request_data:
-                if qp == 'bbox' and isinstance(request[qp], list):
+                if qp == 'bbox' and isinstance(request_data[qp], list):
                     request_params[qp] = ','.join(str(b) for b in request_data[qp])  # noqa
                 else:
                     request_params[qp] = request_data[qp]
@@ -372,6 +374,10 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
                     feature['stac_version'] = '1.0.0'
                 feature['properties'].update(get_temporal(feature))
                 stac_api_response['features'].append(feature)
+
+                if feature.get('geometry') is not None and 'bbox' not in feature:  # noqa
+                    geom = from_geojson(json.dumps(feature['geometry']))
+                    feature['bbox'] = geom.bounds
 
     stac_api_response['numberReturned'] = len(stac_api_response['features'])
 
