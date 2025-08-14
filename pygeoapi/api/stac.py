@@ -379,6 +379,10 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
                     geom = from_geojson(json.dumps(feature['geometry']))
                     feature['bbox'] = geom.bounds
 
+                for la in ['links', 'assets']:
+                    if feature.get(la) is None:
+                        feature[la] = []
+
     stac_api_response['numberReturned'] = len(stac_api_response['features'])
 
     stac_api_response['links'].append({
