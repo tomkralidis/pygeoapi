@@ -33,19 +33,23 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Optional
 
+from pygeoapi.util import THISDIR
+
+DEFINITIONS = THISDIR / 'resources' / 'definitions' / 'tiles'
 TILEMATRIXSET_HREF_BASEURL = 'https://raw.githubusercontent.com/opengeospatial/2D-Tile-Matrix-Set/master/registry/json'  # noqa
 
 
 class TilesMetadataFormat(str, Enum):
     # Tile Set Metadata
-    JSON = "JSON"
-    JSONLD = "JSONLD"
+    JSON = 'JSON'
+    JSONLD = 'JSONLD'
     # TileJSON 3.0
-    TILEJSON = "TILEJSON"
+    TILEJSON = 'TILEJSON'
     # HTML (default)
-    HTML = "HTML"
+    HTML = 'HTML'
 
 
 @dataclass
@@ -67,11 +71,13 @@ class DefaultTileMatrixSets(Enum):
         id='WorldCRS84Quad',
         crs='http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         uri='http://www.opengis.net/def/tilematrixset/OGC/1.0/WorldCRS84Quad',
-        href=f'{TILEMATRIXSET_HREF_BASEURL}/WorldCRS84Quad.json'
+        href=f'{TILEMATRIXSET_HREF_BASEURL}/WorldCRS84Quad.json',
+        path= DEFINITIONS / 'WorldCRS84Quad.json'
     )
     WebMercatorQuad = TileMatrixSetType(
         id='WebMercatorQuad',
         crs='http://www.opengis.net/def/crs/EPSG/0/3857',
         uri='http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad',
-        href=f'{TILEMATRIXSET_HREF_BASEURL}/WebMercatorQuad.json'
+        href=f'{TILEMATRIXSET_HREF_BASEURL}/WebMercatorQuad.json',
+        path= TILES_DEFINITIONS / 'WebMercatorQuad.json'
     )

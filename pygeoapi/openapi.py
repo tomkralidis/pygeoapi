@@ -45,7 +45,7 @@ import yaml
 
 from pygeoapi import l10n
 from pygeoapi.api import all_apis
-from pygeoapi.models.openapi import OAPIFormat
+from pygeoapi.models.openapi import SupportedFormats
 from pygeoapi.util import (filter_dict_by_key_value, to_json, yaml_load,
                            get_api_rules, get_base_url)
 
@@ -968,7 +968,7 @@ def validate_openapi_document(instance_dict: dict) -> bool:
 
 
 def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
-                              output_format: OAPIFormat,
+                              output_format: SupportedFormats,
                               fail_on_invalid_collection: bool = True) -> str:
     """
     Generate an OpenAPI document from the configuration file
@@ -994,7 +994,7 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
 
     oas = get_oas(s, fail_on_invalid_collection=fail_on_invalid_collection)
 
-    if output_format == 'yaml':
+    if output_format == SupportedFormats.YAML:
         content = yaml.safe_dump(oas, default_flow_style=False)
     else:
         content = to_json(oas, pretty=pretty_print)

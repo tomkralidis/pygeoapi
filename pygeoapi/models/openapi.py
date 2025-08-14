@@ -1,10 +1,10 @@
-# ****************************** -*-
-# flake8: noqa
 # =================================================================
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2025 Francesco Bartoli
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,18 +31,7 @@
 
 from enum import Enum
 
-from pydantic import BaseModel
-import pydantic
 
-
-class SupportedFormats(Enum):
+class SupportedFormats(str, Enum):
     JSON = 'json'
     YAML = 'yaml'
-
-# Handle Pydantic v1/v2 compatibility
-if pydantic.VERSION.startswith('1'):
-    class OAPIFormat(BaseModel):
-        __root__: SupportedFormats = SupportedFormats.YAML
-else:
-    class OAPIFormat(BaseModel):
-        root: SupportedFormats = SupportedFormats.YAML
