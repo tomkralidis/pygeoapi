@@ -339,7 +339,7 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
 
         for qp in ['bbox', 'datetime', 'limit', 'offset']:
             if qp in request_data:
-                if qp == 'bbox':
+                if qp == 'bbox' and isinstance(request[qp], list):
                     request_params[qp] = ','.join(str(b) for b in request_data[qp])  # noqa
                 else:
                     request_params[qp] = request_data[qp]
