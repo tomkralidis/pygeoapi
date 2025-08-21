@@ -92,7 +92,6 @@ PLUGINS = {
 }
 
 
-
 def load_plugin(plugin_type: str, plugin_def: dict) -> Any:
     """
     loads plugin by name

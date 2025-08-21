@@ -30,7 +30,8 @@ def create_wayfarer_graph():
     # get data frames from the graph
     _, gdf_edges = convert.graph_to_gdfs(convert.to_undirected(G))
 
-    # project to Web Mercator from EPSG:4326 so we can work with planar distance calculations
+    # project to Web Mercator from EPSG:4326 so we can work with
+    # planar distance calculations
     gdf_edges = projection.project_gdf(gdf_edges, to_crs="EPSG:3857")
 
     # get a dictionary of all edges in the network
@@ -40,10 +41,12 @@ def create_wayfarer_graph():
     recs = []
 
     for fid, props in enumerate(d):
-        # we can't use osmid as the key as sometimes it is not always unique and sometimes a list
+        # we can't use osmid as the key as sometimes it is not always unique
+        # and sometimes a list
         # instead use the enumerator which will match the FID in the GeoPackage
         props.update({"key": fid})
-        # we reprojected the geometry to Web Mercator, so we also need to update the length field
+        # we reprojected the geometry to Web Mercator, so we also need to
+        # update the length field
         props["length"] = props["geometry"].length
         recs.append(props)
 

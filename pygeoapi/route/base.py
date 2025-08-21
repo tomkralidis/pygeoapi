@@ -27,11 +27,7 @@
 #
 # =================================================================
 
-import json
 import logging
-from http import HTTPStatus
-
-from pygeoapi.error import GenericError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,8 +47,9 @@ class BaseRouter:
         try:
             self.type = 'route'
             self.name = provider_def['name']
+            self.data = provider_def['data']
         except KeyError:
-            raise RuntimeError('name/type/router are required')
+            raise RuntimeError('name/type/data are required')
 
     def calculate_route(self, data):
         """

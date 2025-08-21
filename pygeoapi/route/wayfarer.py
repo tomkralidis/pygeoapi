@@ -201,12 +201,13 @@ class WayfarerRouter(BaseRouter):
         super().__init__(provider_def)
 
     def calculate_route(self, data):
-        coords = shapely.from_geojson(json.dumps(data['inputs']['waypoints']['value' ]))
+        coords = shapely.from_geojson(
+            json.dumps(data['inputs']['waypoints']['value']))
 
-        network_file = '/Users/tomkralidis/Dev/pygeoapi/routing/data/riga.pickle'
-        network = loader.load_network_from_file(network_file)
-        print("JJJ", coords.geoms[0].x, coords.geoms[0].y, coords.geoms[1].x, coords.geoms[1].y)
-        result = calculate_route(network, coords.geoms[0].x, coords.geoms[0].y, coords.geoms[1].x, coords.geoms[1].y)
+        network = loader.load_network_from_file(self.data)
+
+        result = calculate_route(network, coords.geoms[0].x, coords.geoms[0].y,
+                                 coords.geoms[1].x, coords.geoms[1].y)
 
         return 'application/geo+json', result
 
