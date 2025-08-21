@@ -1,0 +1,21 @@
+{
+  "inputs": {
+    "name": "Route in Riga, Latvia",
+    "waypoints": {
+      "value": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            24.0978017,
+            56.9422733
+          ],
+          [
+            24.0980711,
+            56.9370936
+          ]
+        ]
+      }
+    },
+    "preference": "fastest"
+  }
+}

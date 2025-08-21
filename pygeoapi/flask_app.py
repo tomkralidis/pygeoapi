@@ -513,6 +513,7 @@ def get_collection_edr_query(collection_id, instance_id=None,
         query_type, location_id, skip_valid_check=True
     )
 
+
 @BLUEPRINT.route('/routes', methods=['GET', 'POST'])
 def routes():
     """
