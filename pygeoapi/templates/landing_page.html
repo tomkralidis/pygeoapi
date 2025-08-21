@@ -89,6 +89,14 @@
         <a href="{{ config['server']['url'] }}/TileMatrixSets?f=html">{% trans %}View the Tile Matrix Sets available on this service{% endtrans %}</a>
       </p>
   {% endif %}
+  {% if data['route'] %}
+  <section id="routes">
+      <h2>{% trans %}Routes{% endtrans %}</h2>
+      <p>
+        <a href="{{ config['server']['url'] }}/routes?f=html">{% trans %}View the routes in this service{% endtrans %}</a>
+      </p>
+  </section>
+  {% endif %}
   {% if data['pubsub'] %}
   <section id="pubsub">
       <h2>{% trans %}Pub/Sub Notifications{% endtrans %} ({{ data['pubsub']['name'] }})</h2>

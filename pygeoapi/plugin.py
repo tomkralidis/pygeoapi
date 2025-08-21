@@ -90,6 +90,9 @@ PLUGINS = {
         'HTTP': 'pygeoapi.pubsub.http.HTTPPubSubClient',
         'Kafka': 'pygeoapi.pubsub.kafka.KafkaPubSubClient',
         'MQTT': 'pygeoapi.pubsub.mqtt.MQTTPubSubClient'
+    },
+    'route': {
+        'Wayfarer': 'pygeoapi.route.wayfarer.WayfarerRouter'
     }
 }
 
