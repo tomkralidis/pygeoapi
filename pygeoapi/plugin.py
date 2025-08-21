@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -85,8 +85,12 @@ PLUGINS = {
         'MongoDB': 'pygeoapi.process.manager.mongodb_.MongoDBManager',
         'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager',
         'PostgreSQL': 'pygeoapi.process.manager.postgresql.PostgreSQLManager'
+    },
+    'route': {
+        'Wayfarer': 'pygeoapi.route.wayfarer.WayfarerRouter'
     }
 }
+
 
 
 def load_plugin(plugin_type: str, plugin_def: dict) -> Any:
