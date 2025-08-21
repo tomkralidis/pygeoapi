@@ -136,7 +136,6 @@ def path2geojson(path) -> dict:
     }
 
     for edge in path:
-        LOGGER.debug('Transforming edge Geometry')
         geometry = transform_point(
             'EPSG:3857', 'EPSG:4326', edge.attributes['geometry'])
 
@@ -214,13 +213,14 @@ class WayfarerRouter(BaseRouter):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print(f'Usage: {sys.argv[0]} <startx,starty> <endx,endy>')
+        print(f'Usage: {sys.argv[0]} <network> <startx,starty> <endx,endy>')
+        sys.exit(1)
 
-    start_point = [float(c) for c in sys.argv[1].split(',')]
-    end_point = [float(c) for c in sys.argv[2].split(',')]
+    start_point = [float(c) for c in sys.argv[2].split(',')]
+    end_point = [float(c) for c in sys.argv[3].split(',')]
 
     # load the network
-    network = loader.load_network_from_file('./data/riga.pickle')
+    network = loader.load_network_from_file(sys.argv[1])
 
     # calculate the route!
     route_geojson = calculate_route(network, *start_point, *end_point)
