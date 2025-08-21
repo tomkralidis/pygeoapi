@@ -44,6 +44,7 @@ import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
+import pygeoapi.api.routes as routes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
 from pygeoapi.openapi import load_openapi_document
@@ -511,6 +512,19 @@ def get_collection_edr_query(collection_id, instance_id=None,
         edr_api.get_collection_edr_query, request, collection_id, instance_id,
         query_type, location_id, skip_valid_check=True
     )
+
+@BLUEPRINT.route('/routes', methods=['GET', 'POST'])
+def routes():
+    """
+    OGC API - Routes endpoint
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'GET':
+        return execute_from_flask(routes_api.get_routes, request)
+    elif request.method == 'POST':
+        return execute_from_flask(routes_api.calculate_route, request)
 
 
 @BLUEPRINT.route('/stac')

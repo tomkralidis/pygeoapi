@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {% trans %}Routes{% endtrans %} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="./routes">{% trans %}Routes{% endtrans %}</a>
+{% endblock %}
+{% block body %}
+    <section id="routes">
+      <h2>{% trans %}Routes in this service{% endtrans %}</h2>
+      <div class="row">
+        <div class="col-sm-12 col-md-6">
+          <h3>{% trans %}Links{% endtrans %}</h3>
+          <ul>
+          {% for link in data['links'] %}
+              <li>
+                <a title="{{ link['rel'] }}" href="{{ link['href'] }}">
+                <span>{{ link['title'] }}</span> (<span>{{ link['type'] }}</span>)
+                </a></li>
+          {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </section>
+{% endblock %}

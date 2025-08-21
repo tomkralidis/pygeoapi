@@ -133,7 +133,7 @@ def all_apis() -> dict:
     """
 
     from . import (coverages, environmental_data_retrieval, itemtypes, maps,
-                   processes, tiles, stac)
+                   processes, routes, tiles, stac)
 
     return {
         'coverage': coverages,
@@ -141,6 +141,7 @@ def all_apis() -> dict:
         'itemtypes': itemtypes,
         'map': maps,
         'process': processes,
+        'route': routes,
         'tile': tiles,
         'stac': stac
     }
@@ -800,6 +801,11 @@ def landing_page(api: API,
         'title': l10n.translate('Processes', request.locale),
         'href': f"{api.base_url}/processes"
     }, {
+        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/routes',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('Routes', request.locale),
+        'href': f"{api.base_url}/routes"
+    }, {
         'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('Jobs', request.locale),
@@ -819,7 +825,9 @@ def landing_page(api: API,
     headers = request.get_response_headers(**api.api_headers)
     if request.format == F_HTML:  # render
 
-        for resource_type in ['collection', 'process', 'stac-collection']:
+        resource_types = ['collection', 'process', 'route', 'stac-collection']
+
+        for resource_type in resource_types:
             fcm[resource_type] = False
 
             found = filter_dict_by_key_value(api.config['resources'],
